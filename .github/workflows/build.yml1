@@ -1,0 +1,274 @@
+name: win32_64/linux
+on:
+ push:
+  
+# pull_request：
+    tags: 
+      - 'v*'
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      get_version: ${{ steps.get_version.outputs.version }}
+    name: Create release
+    steps:
+    - name: Get Version
+      id: get_version
+      uses: battila7/get-version-action@v2
+    - run: echo ${{ steps.get_version.outputs.version }}
+    - run: echo ${{ steps.get_version.outputs.version-without-v }}
+      env: 
+       get_version: ${{ steps.get_version.outputs.version }}
+    - name: Get current time
+      uses: srfrnk/current-time@master
+      id: current-time
+      with: 
+        format: YYMMDD
+    - name: Use current time
+      env:
+        TIME: "${{ steps.current-time.outputs.time }}"
+        F_TIME: "${{ steps.current-time.outputs.formattedTime }}"
+      run: |
+       echo $TIME
+       echo ${{ github.ref }}
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1.1.4
+      env:
+         upload_url: ${{ steps.create_release.outputs.upload_url }}
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+       tag_name: ${{ steps.get_version.outputs.version }}
+       release_name: TrinityCore-NPCBOT-Eluna-zhCN_${{ steps.get_version.outputs.version }}
+       body: |
+              ${{ steps.Changelog.outputs.changelog }}                                            
+
+    #- uses: notlmn/release-with-changelog@v3
+    #- uses: MorsiC/changelog-release-by-branch@v4.5
+    #  with:
+     #   tag: ${{ steps.get_version.outputs.version }}
+      #  token: ${{ secrets.GITHUB_TOKEN }}
+
+    
+    #- name: Upload upload_url.txt
+    #  uses: actions/upload-artifact@v2
+     # with:
+     #     name: upload_url
+     #     path: ./upload_url.txt
+  build-windowsx86:
+    needs: [create_release]
+    runs-on: windows-latest
+    env:
+         OPENSSL_DIR: C:\OpenSSL
+         MYSQL_HOME: C:\mysql-5.7.31-win32
+         Boost_DIR: C:\boost
+         OPENSSL_VERSION: 1_1_1i
+         BITS: 32
+    steps:
+    - name: Cache
+      id: WindowsCache
+      uses: actions/cache@v2.1.3
+      env:
+       cache-name: OpenSSL+mysql-5.7.31-win32+boost
+      with:
+        path: | 
+             C:\OpenSSL
+             C:\mysql-5.7.31-win32
+             C:\boost
+        key: ${{ runner.os }}-${{ env.cache-name }}-
+    - name: Cache_lib
+    #  if: steps.WindowsCache.outputs.cache-hit != 'true'
+      shell: powershell
+      run: |
+        if (Test-Path "C:\OpenSSL") {
+            echo "using OpenSSL_1_1_1h from cache"
+            Get-ChildItem $env:OPENSSL_DIR
+        }
+        else
+        {
+            mkdir -p C:\OpenSSL
+            Invoke-WebRequest "http://slproweb.com/download/Win${env:BITS}OpenSSL-${env:OPENSSL_VERSION}.exe" -OutFile Win${env:BITS}OpenSSL-${env:OPENSSL_VERSION}.exe
+            &.\Win${env:BITS}OpenSSL-${env:OPENSSL_VERSION}.exe /SILENT /VERYSILENT /SP- /DIR="C:\OpenSSL"
+        }
+        
+        if (Test-Path "C:\mysql-5.7.31-win32") {
+            echo "using mysql-5.7.31-win32 from cache"
+        }
+        else
+        {
+            echo "downloading mysql-5.7.31-win32"
+            Invoke-WebRequest "https://downloads.mysql.com/archives/get/p/23/file/mysql-5.7.31-win32.zip" -OutFile mysql-5.7.31-win32.zip
+            echo "installing mysql-5.7.31-win32.zip"
+            7z x -y mysql-5.7.31-win32.zip -oC:\
+        }
+        if (Test-Path "C:\boost") {
+            echo "using C:\boost from cache"
+        }
+        else
+        {
+            echo "downloading boost"
+            <# $url64 = "https://bintray.com/boostorg/release/download_file?file_path=1.74.0%2Fbinaries%2Fboost_1_74_0-msvc-14.1-32.exe"
+            $url86 = "https://bintray.com/boostorg/release/download_file?file_path=1.74.0%2Fbinaries%2Fboost_1_74_0-msvc-14.1-64.exe" #>
+            $url64 = "https://bintray.com/boostorg/release/download_file?file_path=1.73.0%2Fbinaries%2Fboost_1_73_0-msvc-14.2-64.exe"
+            $url86 = "https://bintray.com/boostorg/release/download_file?file_path=1.73.0%2Fbinaries%2Fboost_1_73_0-msvc-14.2-32.exe"
+            $path = "C:\boost.exe"
+            [Net.WebClient]::new().DownloadFile($url86, $path)
+            Start-Process C:\boost.exe -ArgumentList "/DIR=C:\boost","/VERYSILENT" -Wait
+        }
+            Get-ChildItem C:\boost
+            $env:Boost_DIR = "C:\boost"
+            $env:BOOST_ROOT= "C:\boost"
+            $env:MYSQL_HOME= "C:\mysql-5.7.31-win32"
+            $env:Path="$env:MYSQL_HOME\lib;$env:MYSQL_HOME\include;$env:OPENSSL_DIR;$env:Path"
+            Get-ChildItem C:\mysql-5.7.31-win32
+            Get-ChildItem C:\OpenSSL
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: setup-msbuild
+      uses: microsoft/setup-msbuild@v1
+
+
+    - name: Setup
+      shell: cmd
+      run: |
+        chcp 65001
+        mkdir bin
+        cd bin
+        cmake ../ -A win32 -DWITH_WARNINGS=1 -DWITH_COREDEBUG=0 -DUSE_COREPCH=1 -DUSE_SCRIPTPCH=1 -DTOOLS=1 -DSERVERS=1 -DNOJEM=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=" /utf-8 /DWIN32 /D_WINDOWS /W3 /GR /EHsc" -DCMAKE_C_FLAGS=" /utf-8 /DWIN32 /D_WINDOWS /W3" -DCMAKE_INSTALL_PREFIX=check_install -DBUILD_TESTING=1 -DOPENSSL_ROOT_DIR:PATH="%OPENSSL_DIR%" -DLIB_EAY_RELEASE:FILEPATH="%OPENSSL_DIR%\lib\libcrypto.lib" -DOPENSSL_INCLUDE_DIR:PATH="%OPENSSL_DIR%\include" -DSSL_EAY_RELEASE:FILEPATH="%OPENSSL_DIR%\lib\libssl.lib" -DLIB_EAY_DEBUG:FILEPATH="%OPENSSL_DIR%\lib\libcrypto.lib" -DSSL_EAY_DEBUG:FILEPATH="%OPENSSL_DIR%\lib\libssl.lib" -DWITH_WARNINGS:BOOL="0" -DELUNA:BOOL="1" -DMYSQL_INCLUDE_DIR:PATH="%MYSQL_HOME%/include" -DMYSQL_LIBRARY:FILEPATH="%MYSQL_HOME%/lib/libmysql.lib" -DBoost_DIR:PATH="%Boost_DIR%" 
+        cmake --build . --config Release
+        copy "%OPENSSL_DIR%\libssl-1_1.dll" ${{ github.workspace }}\bin\bin\libssl-1_1.dll
+        copy "%OPENSSL_DIR%\libcrypto-1_1.dll" ${{ github.workspace }}\bin\bin\libcrypto-1_1.dll
+        copy "%MYSQL_HOME%\lib\libmysql.dll" ${{ github.workspace }}\bin\bin\libmysql.dll
+        Copy "%MYSQL_HOME%\bin\mysql.exe" ${{ github.workspace }}\bin\bin\mysql.exe
+        echo ${{ github.workspace }}\bin\bin\
+    #- name: Check executables
+      #run: |
+      #  cd D:\a\TrinityCore\TrinityCore\bin\bin\Release\
+      #  authserver.exe --version
+       # worldserver.exe --version
+    - name: 7zip pack
+      uses: DuckSoft/create-7z-action@v1.0
+      with:
+      # file/folder path to compress
+        pathSource: ${{ github.workspace }}\bin\bin\
+    # 7z archive path to write
+        pathTarget: \TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_win32.7z
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+         upload_url: ${{ needs.create_release.outputs.upload_url }}
+         asset_path: \TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_win32.7z
+         asset_name: TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_win32.7z
+         asset_content_type: application/7z
+  build-windowsx64:
+    needs: [create_release]
+    runs-on: windows-latest
+    steps:
+    - name: Cache
+      id: WindowsCache
+      uses: actions/cache@v2.1.3
+      env:
+       cache-name: vcpkg+openssl
+      with:
+        path: | 
+             C:\vcpkg\installed
+        key: ${{ runner.os }}-${{ env.cache-name }}-
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: setup-msbuild
+      uses: microsoft/setup-msbuild@v1
+    - name: add lib
+      if: steps.WindowsCache.outputs.cache-hit != 'true'
+      run: |
+         vcpkg update
+         vcpkg integrate install
+         vcpkg install openssl:x64-windows
+         Get-ChildItem C:\vcpkg\installed\x64-windows\bin
+         Get-ChildItem C:\vcpkg\installed\x64-windows\lib
+    - name: Setup
+      run: |
+        chcp 65001
+        #cmd
+        set BOOST_ROOT=%BOOST_ROOT_1_72_0%
+        $powershell
+        echo ${{ github.repository }}
+        $env:BOOST_ROOT=$env:BOOST_ROOT_1_72_0
+        mkdir bin
+        cd bin
+        cmake ../ -DWITH_WARNINGS=1 -DWITH_COREDEBUG=0 -DUSE_COREPCH=1 -DUSE_SCRIPTPCH=1 -DTOOLS=1 -DSERVERS=1 -DNOJEM=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=" /utf-8 /DWIN32 /D_WINDOWS /W3 /GR /EHsc" -DCMAKE_C_FLAGS=" /utf-8 /DWIN32 /D_WINDOWS /W3" -DCMAKE_INSTALL_PREFIX=check_install -DBUILD_TESTING=1 -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DOPENSSL_ROOT_DIR:PATH="C:\vcpkg\installed\x64-windows" -DLIB_EAY_RELEASE:FILEPATH="C:\vcpkg\installed\x64-windows\lib\libcrypto.lib" -DOPENSSL_INCLUDE_DIR:PATH="C:\vcpkg\installed\x64-windows\include" -DSSL_EAY_RELEASE:FILEPATH="C:\vcpkg\installed\x64-windows\lib\libssl.lib" -DLIB_EAY_DEBUG:FILEPATH="C:\vcpkg\installed\x64-windows\lib\libcrypto.lib" -DSSL_EAY_DEBUG:FILEPATH="C:\vcpkg\installed\x64-windows\lib\libssl.lib" -DWITH_WARNINGS:BOOL="0" -DELUNA:BOOL="1" 
+        cmake --build . --config Release
+        Copy-Item C:\mysql-5.7.21-winx64\lib\libmysql.dll -Destination .\bin\Release\
+        Copy-Item C:\mysql-5.7.21-winx64\bin\mysql.exe -Destination .\bin\Release\
+        echo $GITHUB_WORKSPACE
+    #- name: Check executables
+      #run: |
+      #  cd D:\a\TrinityCore-NPCBOT-Eluna-zhCN\TrinityCore-NPCBOT-Eluna-zhCN\bin\bin\Release\
+      #  authserver.exe --version
+       # worldserver.exe --version
+    - name: 7zip pack
+      uses: DuckSoft/create-7z-action@v1.0
+      with:
+      # file/folder path to compress
+        pathSource: ${{ github.workspace }}\bin\bin\
+    # 7z archive path to write
+        pathTarget: \TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_win64.7z
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+         upload_url: ${{ needs.create_release.outputs.upload_url }}
+         asset_path: \TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_win64.7z
+         asset_name: TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_win64.7z
+         asset_content_type: application/7z
+      
+  build-linux:
+    needs: [create_release]
+    runs-on: ubuntu-20.04
+    steps:
+    - run: echo ${{ needs.create_release.outputs.upload_url }}
+    - run: echo ${{ needs.create_release.outputs.get_version }}
+    - uses: actions/checkout@v2
+    - name: Dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -yq libboost-all-dev
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 100 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+    - name: Setup
+      run: |
+        mkdir bin
+        cd bin
+        cmake ../ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=0 -DUSE_COREPCH=1 -DUSE_SCRIPTPCH=1 -DTOOLS=1 -DELUNA:BOOL="1" -DSERVERS=1 -DNOJEM=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-fpermissive" -DCMAKE_INSTALL_PREFIX=check_install -DBUILD_TESTING=0
+        cd ..
+    - name: Build
+      run: |
+        cd bin
+        make -j 4 -k && make install
+    - name: Check executables
+      run: |
+        cd bin/check_install/bin
+        ./authserver --version
+        ./worldserver --version
+        cd ../..
+    - name: 7zip pack
+      uses: DuckSoft/create-7z-action@v1.0
+      with:
+      # file/folder path to compress
+        pathSource: ./bin/check_install
+    # 7z archive path to write
+        pathTarget: ./TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_linux.7z
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+         upload_url: ${{ needs.create_release.outputs.upload_url }}
+         asset_path: ./TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_linux.7z
+         asset_name: TrinityCore-NPCBOT-Eluna-zhCN_${{ needs.create_release.outputs.get_version }}_linux.7z
+         asset_content_type: application/7z

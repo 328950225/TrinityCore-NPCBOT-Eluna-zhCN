@@ -1,0 +1,86 @@
+name: win64-ultra-build
+on:
+  push:
+    branches:
+      - NPCBOT-Eluna-zhCN-2026
+  workflow_dispatch:
+
+jobs:
+  build-windowsx64:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # --- 🏎️ 优化 1：缓存 vcpkg 依赖 (MySQL/OpenSSL) ---
+    - name: Restore vcpkg Cache
+      id: cache-vcpkg
+      uses: actions/cache@v4
+      with:
+        path: C:/vcpkg/installed
+        key: ${{ runner.os }}-vcpkg-libmysql-openssl
+
+    - name: Install Dependencies
+      if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+      run: |
+        vcpkg install openssl:x64-windows libmysql:x64-windows
+        vcpkg integrate install
+
+    # --- 🏎️ 优化 2：缓存 Boost 目录 ---
+    - name: Restore Boost Cache
+      id: cache-boost
+      uses: actions/cache@v4
+      with:
+        path: C:/hostedtoolcache/boost
+        key: ${{ runner.os }}-boost-1.84.0
+
+    - name: Download and install Boost
+      if: steps.cache-boost.outputs.cache-hit != 'true'
+      uses: MarkusJx/install-boost@v2
+      id: install-boost
+      with:
+        boost_version: 1.84.0
+
+    # --- 🛠️ 核心修复：CMake 环境变量与路径对齐 ---
+    - name: CMake && Build
+      env:
+        # 确保 CMake 能找到刚才安装或恢复的 Boost
+        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+      shell: pwsh
+      run: |
+    - name: CMake && Build
+      env:
+        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+      shell: pwsh
+      run: |
+        # 【关键修复】把路径里的反斜杠 \ 全部换成正斜杠 /，防止 \a 转义错误
+        $FIXED_BOOST_ROOT = "$env:BOOST_ROOT".Replace('\', '/')
+        echo "修正后的 Boost 路径: $FIXED_BOOST_ROOT"
+
+        mkdir build_dir
+        cd build_dir
+        
+        # 使用修正后的 $FIXED_BOOST_ROOT
+        cmake ../ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=0 -DUSE_COREPCH=1 -DUSE_SCRIPTPCH=1 -DTOOLS=1 -DSERVERS=1 -DNOJEM=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DELUNA=1 -DWITH_NPCBOT=1 -DBOOST_ROOT="$FIXED_BOOST_ROOT"
+        
+        if ($LASTEXITCODE -ne 0) { throw "CMake 没通过，快检查日志！" }
+
+        cmake --build . --config Release --parallel 4
+        
+        if ($LASTEXITCODE -ne 0) { throw "编译出错了！" }
+
+        # 收集文件
+        mkdir output
+        Get-ChildItem -Path ./bin/Release/*.exe | Copy-Item -Destination ./output/
+        Copy-Item C:/vcpkg/installed/x64-windows/bin/*.dll -Destination ./output/
+        
+        mkdir ../bin
+        Copy-Item ./output/* ../bin/
+
+    # --- 🎁 结果下载 ---
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TrinityCore-Win64-Final
+        # 直接打包 build_dir 里的 output 目录
+        path: build_dir/output/

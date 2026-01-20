@@ -86,6 +86,11 @@
 #include "WardenCheckMgr.h"
 #include "WaypointManager.h"
 #include "WeatherMgr.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#include "ElunaLoader.h"
+#include "ElunaConfig.h"
+#endif			
 #include "WhoListStorage.h"
 #include "WorldSession.h"
 
@@ -1619,6 +1624,25 @@ void World::SetInitialWorldSettings()
         exit(1);
     }
 
+#ifdef ELUNA
+    ///- Initialize Lua Engine
+    TC_LOG_INFO("server.loading", "Loading Eluna config...");
+    sElunaConfig->Initialize();
+
+    ///- Initialize Lua Engine
+    if (sElunaConfig->IsElunaEnabled())
+    {
+        TC_LOG_INFO("server.loading", "Loading Lua scripts...");
+        sElunaLoader->LoadScripts();
+
+        if (sElunaConfig->GetConfig(CONFIG_ELUNA_SCRIPT_RELOADER))
+        {
+            TC_LOG_INFO("server.loading", "Loading Eluna script reloader...");
+            sElunaLoader->InitializeFileWatcher();
+        }
+    }
+#endif
+
     ///- Initialize pool manager
     sPoolMgr->Initialize();
 
@@ -2043,6 +2067,7 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Loading Waypoints...");
     sWaypointMgr->Load();
 
+
     TC_LOG_INFO("server.loading", "Loading Creature Formations...");
     sFormationMgr->LoadCreatureFormations();
 
@@ -2100,6 +2125,14 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Loading Creature Text Locales...");
     sCreatureTextMgr->LoadCreatureTextLocales();
 
+#ifdef ELUNA
+    if (sElunaConfig->IsElunaEnabled())
+    {
+        TC_LOG_INFO("server.loading", "Starting Eluna world state...");
+        _elunaInfo = { ElunaInfoKey::MakeGlobalKey(0) };
+        sElunaMgr->Create(nullptr, _elunaInfo);
+    }
+#endif
     TC_LOG_INFO("server.loading", "Initializing Scripts...");
     sScriptMgr->Initialize();
     sScriptMgr->OnConfigLoad(false);                                // must be done after the ScriptMgr has been properly initialized
@@ -2234,6 +2267,10 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Calculate guild limitation(s) reset time...");
     InitGuildResetTime();
 
+#ifdef ELUNA
+    if(GetEluna())
+        GetEluna()->OnConfigLoad(false); // Must be done after Eluna is initialized and scripts have run.
+#endif
     // Preload all cells, if required for the base maps
     if (sWorld->getBoolConfig(CONFIG_BASEMAP_LOAD_GRIDS))
     {

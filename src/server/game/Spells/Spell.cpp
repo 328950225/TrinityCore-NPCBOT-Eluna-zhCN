@@ -64,7 +64,11 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
-
+#include "WorldSession.h"
+#ifdef ELUNA
+		
+#include "LuaEngine.h"
+#endif
 //npcbot
 #include "botmgr.h"
 //end npcbot
@@ -3451,6 +3455,10 @@ void Spell::_cast(bool skipCheck)
         return;
     }
 
+#ifdef ELUNA
+    if (Eluna* e = m_caster->GetEluna())
+        e->OnSpellCast(this, skipCheck);
+#endif										
     if (Player* playerCaster = m_caster->ToPlayer())
     {
         // now that we've done the basic check, now run the scripts

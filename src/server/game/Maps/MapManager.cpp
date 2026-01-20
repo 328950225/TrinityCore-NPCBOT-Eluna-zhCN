@@ -35,7 +35,10 @@
 #include "Opcodes.h"
 #include "ScriptMgr.h"
 #include <numeric>
-
+#ifdef ELUNA
+		
+#include "LuaEngine.h"
+#endif
 //npcbot
 #include "botdatamgr.h"
 #include "botmgr.h"
@@ -384,4 +387,15 @@ void MapManager::FreeInstanceId(uint32 instanceId)
     // If freed instance id is lower than the next id available for new instances, use the freed one instead
     _nextInstanceId = std::min(instanceId, _nextInstanceId);
     _freeInstanceIds[instanceId] = true;
+#ifdef ELUNA
+    for (MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
+    {
+        if (!(*itr).second->Instanceable())
+            continue;
+
+        Map* iMap = (*itr).second->ToMapInstanced()->FindInstanceMap(instanceId);
+        if (iMap && iMap->GetEluna())
+            iMap->GetEluna()->FreeInstanceId(instanceId);
+    }
+#endif																			   
 }

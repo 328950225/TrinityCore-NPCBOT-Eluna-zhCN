@@ -34,6 +34,9 @@
 #include "Vehicle.h"
 #include "World.h"
 #include "WorldPacket.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif					  
 
 //npcbot: try query bot name
 #include "CreatureData.h"
@@ -235,6 +238,11 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& recvData)
         return;
     }
 
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        if (!e->OnMemberAccept(group, GetPlayer()))
+            return;
+#endif									  
     Player* leader = ObjectAccessor::FindPlayer(group->GetLeaderGUID());
 
     // Forming a new group, create it

@@ -70,6 +70,13 @@ target_link_libraries(common
     jemalloc
     short_alloc)
 
+if (ELUNA)
+  target_link_libraries(common
+    PUBLIC
+      lualib)
+endif()
+
+						  
 set_target_properties(common
   PROPERTIES
     COMPILE_WARNING_AS_ERROR ${WITH_WARNINGS_AS_ERRORS}

@@ -32,6 +32,9 @@
 #include "QuestDef.h"
 #include "QuestPackets.h"
 #include "ScriptMgr.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif			
 #include "World.h"
 #include "WorldPacket.h"
 
@@ -97,6 +100,11 @@ void WorldSession::HandleQuestgiverHelloOpcode(WorldPacket& recvData)
     creature->SetHomePosition(creature->GetPosition());
 
     _player->PlayerTalkClass->ClearMenus();
+#ifdef ELUNA
+    if (Eluna* e = GetPlayer()->GetEluna())
+        if (e->OnGossipHello(_player, creature))
+            return;
+#endif			
     if (creature->AI()->OnGossipHello(_player))
         return;
 
@@ -317,6 +325,10 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recvData)
                         }
                     }
 
+#ifdef ELUNA
+                    if (Eluna* e = GetPlayer()->GetEluna())
+                        e->OnQuestReward(_player, questgiver, quest, reward);
+#endif
                     _player->PlayerTalkClass->ClearMenus();
                     questgiver->AI()->OnQuestReward(_player, quest, reward);
                     break;
@@ -337,6 +349,10 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recvData)
                         }
                     }
 
+#ifdef ELUNA
+                    if (Eluna* e = GetPlayer()->GetEluna())
+                        e->OnQuestReward(_player, questGiver, quest, reward);
+#endif														   
                     _player->PlayerTalkClass->ClearMenus();
                     questGiver->AI()->OnQuestReward(_player, quest, reward);
                     break;
@@ -427,6 +443,10 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recvData)
             _player->RemoveActiveQuest(questId);
             _player->RemoveTimedAchievement(ACHIEVEMENT_TIMED_TYPE_QUEST, questId);
 
+#ifdef ELUNA
+            if (Eluna* e = GetPlayer()->GetEluna())
+                e->OnQuestAbandon(_player, questId);
+#endif												   
             TC_LOG_INFO("network", "Player {} abandoned quest {}", _player->GetGUID().ToString(), questId);
 
             if (sWorld->getBoolConfig(CONFIG_QUEST_ENABLE_QUEST_TRACKER)) // check if Quest Tracker is enabled

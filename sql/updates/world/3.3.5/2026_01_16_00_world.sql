@@ -36,22 +36,22 @@ UPDATE `creature` SET `spawntimesecs` = 259200, `unit_flags` = 33600 WHERE `guid
 
 DELETE FROM `creature_text` WHERE `CreatureID` = 23576;
 INSERT INTO `creature_text` (`CreatureID`, `GroupID`, `ID`, `Text`, `Type`, `Language`, `Probability`, `Emote`, `Duration`, `Sound`, `BroadcastTextId`, `TextRange`, `comment`) VALUES
-(23576,0,0,"Get da move on, guards! It be killin' time!",14,0,100,51,0,12066,22144,1,"Nalorakk - SAY_WAVE_1"),
-(23576,1,0,"Guards, go already! Who you more afraid of, dem... or me?",14,0,100,51,0,12067,22146,1,"Nalorakk - SAY_WAVE_2"),
-(23576,2,0,"Ride now! Ride out dere and bring me back some heads!",14,0,100,51,0,12068,22151,1,"Nalorakk - SAY_WAVE_3"),
-(23576,3,0,"I be losin' me patience! Go on: make dem wish dey was never born!",14,0,100,51,0,12069,22155,1,"Nalorakk - SAY_WAVE_4"),
-(23576,4,0,"Mua-ha-ha!",14,0,100,0,0,0,22145,1,"Nalorakk - SAY_WAVE_DONE"),
-(23576,5,0,"You be dead soon enough!",14,0,100,0,0,12070,23166,1,"Nalorakk - SAY_AGGRO"),
-(23576,6,0,"I bring da pain!",14,0,100,0,0,12071,23167,1,"Nalorakk - SAY_SURGE"),
-(23576,7,0,"You call on da beast, you gonna get more dan you bargain for!",14,0,100,0,0,12072,23168,1,"Nalorakk - SAY_TO_BEAR "),
-(23576,8,0,"Make way for da Nalorakk!",14,0,100,0,0,12073,23169,1,"Nalorakk - SAY_TO_TROLL"),
-(23576,9,0,"You had your chance; now it be too late!",14,0,100,0,0,12074,23170,1,"Nalorakk - SAY_BERSERK"),
-(23576,10,0,"Now whatchoo got to say?",14,0,100,0,0,12075,23171,1,"Nalorakk - SAY_SLAY_1"),
-(23576,10,1,"Da Amani gonna rule again!",14,0,100,0,0,12076,23172,1,"Nalorakk - SAY_SLAY_2"),
-(23576,11,0,"I... be waitin' on da udda side....",14,0,100,0,0,12077,23173,1,"Nalorakk - SAY_DEATH"),
-(23576,12,0,"What could be better than servin' da bear spirit for eternity? Come closer now. Bring your souls to me!",14,0,100,0,0,12078,23305,1,"Nalorakk - SAY_EVENT_1"),
-(23576,13,0,"I smell you, strangers. Don't be delayin' your fate. Come to me now. I make your sacrifice quick.",14,0,100,0,0,12079,23306,1,"Nalorakk - SAY_EVENT_2"),
-(23576,14,0,"%s transforms into a bear!",41,0,100,0,0,0,24263,0,"Nalorakk - EMOTE_TRANSFORM");
+(23576,0,0,"卫兵，快动起来！杀戮时刻到了！",14,0,100,51,0,12066,22144,1,"Nalorakk - SAY_WAVE_1"), 
+(23576,1,0,"卫兵，快滚过去！你们更怕谁，他们……还是我？",14,0,100,51,0,12067,22146,1,"Nalorakk - SAY_WAVE_2"), 
+(23576,2,0,"冲锋！冲出去，给我带点人头回来！",14,0,100,51,0,12068,22151,1,"Nalorakk - SAY_WAVE_3"), 
+(23576,3,0,"我正在失去耐心！快去：让他们后悔来到这世上！",14,0,100,51,0,12069,22155,1,"Nalorakk - SAY_WAVE_4"), 
+(23576,4,0,"喵——哈——哈！",14,0,100,0,0,0,22145,1,"Nalorakk - SAY_WAVE_DONE"), 
+(23576,5,0,"你很快就要没命了！",14,0,100,0,0,12070,23166,1,"Nalorakk - SAY_AGGRO"), 
+(23576,6,0,"我带来了痛苦！",14,0,100,0,0,12071,23167,1,"Nalorakk - SAY_SURGE"), 
+(23576,7,0,"你唤醒了野兽，你会得到比预期更多的教训！",14,0,100,0,0,12072,23168,1,"Nalorakk - SAY_TO_BEAR "), 
+(23576,8,0,"给纳洛拉克让路！",14,0,100,0,0,12073,23169,1,"Nalorakk - SAY_TO_TROLL"), 
+(23576,9,0,"你曾有过机会；但现在太迟了！",14,0,100,0,0,12074,23170,1,"Nalorakk - SAY_BERSERK"), 
+(23576,10,0,"现在你还有什么好说的？",14,0,100,0,0,12075,23171,1,"Nalorakk - SAY_SLAY_1"), 
+(23576,10,1,"阿曼尼将再次统治一切！",14,0,100,0,0,12076,23172,1,"Nalorakk - SAY_SLAY_2"), 
+(23576,11,0,"我……在另一边等着你……",14,0,100,0,0,12077,23173,1,"Nalorakk - SAY_DEATH"), 
+(23576,12,0,"有什么能比永世侍奉熊灵更美好？过来吧，把你们的灵魂献给我！",14,0,100,0,0,12078,23305,1,"Nalorakk - SAY_EVENT_1"), 
+(23576,13,0,"我闻到你们了，陌生人。别拖延你们的命运。现在就来我这。我会让你们的牺牲干脆利落。",14,0,100,0,0,12079,23306,1,"Nalorakk - SAY_EVENT_2"), 
+(23576,14,0,"%s 变形为一只巨熊！",41,0,100,0,0,0,24263,0,"Nalorakk - EMOTE_TRANSFORM");
 
 DELETE FROM `waypoint_data` WHERE `id` IN (1,2,3);
 INSERT INTO `waypoint_data` (`id`,`point`,`position_x`,`position_y`,`position_z`,`orientation`,`delay`,`move_type`,`action`,`action_chance`,`wpguid`) VALUES

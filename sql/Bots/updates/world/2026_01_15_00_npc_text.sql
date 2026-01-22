@@ -4,10 +4,10 @@ SET @LOCALIZED_STRINGS_END   = 70700;
 
 DELETE FROM `npc_text` WHERE ID BETWEEN @LOCALIZED_STRINGS_START and @LOCALIZED_STRINGS_END;
 INSERT INTO `npc_text` (`ID`,`text0_0`,`VerifiedBuild`) VALUES
-(@LOCALIZED_STRINGS_START+0,'Manage ownership...','-1'),
-(@LOCALIZED_STRINGS_START+1,'<Add owner>','-1'),
-(@LOCALIZED_STRINGS_START+2,'WARNING: by sharing ownership over your bot you give another player FULL control over their inventory, roles and all other settings (including sharing them with others)','-1'),
-(@LOCALIZED_STRINGS_START+3,'<Remove owner>','-1'),
-(@LOCALIZED_STRINGS_START+4,'Owners limit exceeded','-1'),
-(@LOCALIZED_STRINGS_START+5,'Shared with','-1'),
-(@LOCALIZED_STRINGS_START+6,'Owner','-1');
+(@LOCALIZED_STRINGS_START+0,'管理所有权...','-1'),
+(@LOCALIZED_STRINGS_START+1,'<添加所有者>','-1'),
+(@LOCALIZED_STRINGS_START+2,'警告：与他人共享机器人所有权意味着您将赋予对方完全控制权，包括其库存、角色和所有其他设置（包括将其共享给其他人）。','-1'),
+(@LOCALIZED_STRINGS_START+3,'<移除所有者>','-1'),
+(@LOCALIZED_STRINGS_START+4,'所有者数量已达上限','-1'),
+(@LOCALIZED_STRINGS_START+5,'分享给','-1'),
+(@LOCALIZED_STRINGS_START+6,'所有者','-1');

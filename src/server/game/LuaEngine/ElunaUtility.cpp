@@ -10,12 +10,7 @@
 #include "Object.h"
 #include "Unit.h"
 #include "GameObject.h"
-#if ELUNA_EXPANSION == EXP_RETAIL
-#include "DB2Stores.h"
-#include "IpAddress.h"
-#else
 #include "DBCStores.h"
-#endif
 #else
 #include "World/World.h"
 #include "Entities/Object.h"
@@ -24,7 +19,6 @@
 #include "Server/DBCStores.h"
 #include "Util/Timer.h"
 #endif
-
 uint32 ElunaUtil::GetCurrTime()
 {
 #if defined ELUNA_TRINITY || defined ELUNA_MANGOS  
@@ -81,7 +75,11 @@ WorldObject const& ElunaUtil::WorldObjectInRangeCheck::GetFocusObject() const
 }
 bool ElunaUtil::WorldObjectInRangeCheck::operator()(WorldObject* u)
 {
+#if !defined ELUNA_VMANGOS
     if (i_typeMask && !u->isType(TypeMask(i_typeMask)))
+#else
+    if (i_typeMask && !u->IsType(TypeMask(i_typeMask)))
+#endif	  
         return false;
     if (i_entry && u->GetEntry() != i_entry)
         return false;
@@ -103,7 +101,7 @@ bool ElunaUtil::WorldObjectInRangeCheck::operator()(WorldObject* u)
             {
                 if (i_obj_fact)
                 {
-#if !defined ELUNA_MANGOS && ELUNA_EXPANSION < EXP_RETAIL
+#if !defined ELUNA_MANGOS
                     if ((i_obj_fact->IsHostileTo(*target->GetFactionTemplateEntry())) != (i_hostile == 1))
 #elif ELUNA_EXPANSION < EXP_RETAIL
                     if ((i_obj_fact->IsHostileTo(*target->getFactionTemplateEntry())) != (i_hostile == 1))
@@ -217,12 +215,3 @@ unsigned char* ElunaUtil::DecodeData(const char *data, size_t *output_length)
 
     return decoded_data;
 }
-
-#if ELUNA_EXPANSION == EXP_RETAIL
-bool ElunaUtil::IsIPAddress(std::string const& text)
-{
-    boost::system::error_code error;
-    Trinity::Net::make_address(text, error);
-    return !error;
-}
-#endif

@@ -165,137 +165,14 @@ static void ApplyBotPercentModFloatVar(float &var, float val, bool apply)
     var *= (apply ? ((100.f + val) / 100.f) : (100.f / (100.f + val)));
 }
 
-static uint16 __rand; //calculated for each bot separately once every updateAI tick
-
 bot_ai::bot_ai(Creature* creature) : CreatureAI(creature),
-    _botData(const_cast<NpcBotData*>(BotDataMgr::SelectNpcBotData(creature->GetEntry() == BOT_ENTRY_MIRROR_IMAGE_BM ? creature->ToTempSummon()->GetSummonerGUID().GetEntry() : creature->GetEntry()))),
-    _botExtras(const_cast<NpcBotExtras*>(BotDataMgr::SelectNpcBotExtras(creature->GetEntry())))
+    _botData(const_cast<NpcBotData*>(BotDataMgr::SelectNpcBotData(IsTempBot() ? creature->ToTempSummon()->GetSummonerGUID().GetEntry() : creature->GetEntry()))),
+    _botExtras(BotDataMgr::SelectNpcBotExtras(creature->GetEntry()))
 {
-    //moved
-    _potionTimer = 0;
-
-    _classinfo = new PlayerClassLevelInfo();
-
-    for (uint8 i = BOT_SLOT_MAINHAND; i != BOT_INVENTORY_SIZE; ++i)
-        for (uint8 j = 0; j != MAX_BOT_ITEM_MOD; ++j)
-            _stats[i][j] = 0;
-
-    for (uint8 i = BOT_SLOT_MAINHAND; i != BOT_INVENTORY_SIZE; ++i)
-        _equips[i] = nullptr;
-
-    _powersTimer = 0;
-    _chaseTimer = 0;
-    _engageTimer = 0;
-
-    _unreachableCount = 0;
-    _jumpCount = 0;
-    _evadeCount = 0;
-
-    _lastTargetGuid = ObjectGuid::Empty;
-
-    checkMasterTimer = urand(5000, 15000);
-    feast_health = false;
-    feast_mana = false;
-    spawned = false;
-    firstspawn = true;
-    _evadeMode = false;
-    _atHome = true;
-    _roleMask = 0;
-    _healHpPctThreshold = 95;
-    _primaryIconTank = -1;
-    _primaryIconDamage = -1;
-    haste = 0;
-    hit = 0.f;
-    parry = 0.f;
-    dodge = 0.f;
-    block = 0.f;
-    crit = 0.f;
-    dmg_taken_phy = 1.f;
-    dmg_taken_mag = 1.f;
-    armor_pen = 0.f;
-    resilience = 0.f;
-    expertise = 0;
-    spellpower = 0;
-    spellpen = 0;
-    defense = 0;
-    blockvalue = 1;
-    regenTimer = 0;
-    m_botSpellInfo = nullptr;
-    waitTimer = 0;
-    _moveBehindTimer = 0;
-    itemsAutouseTimer = 0;
-    _usableItemSlotsMask = 0;
-    evadeDelayTimer = 0;
-    indoorsTimer = 0;
-    outdoorsTimer = 0;
-    GC_Timer = 0;
-    lastdiff = 0;
-    _energyFraction = 0.f;
-    _updateTimerMedium = 0;
+    _checkMasterTimer = urand(5000, 15000);
     _updateTimerLong = urand(15000, 25000);
     _updateTimerEx1 = urand(12000, 15000);
     _updateTimerEx2 = urand(8000, 12000);
-    checkAurasTimer = 0;
-    roleTimer = 0;
-    ordersTimer = 0;
-    doHealth = false;
-    doMana = false;
-    //shouldUpdateStats = true;
-    movepos.m_positionX = 0.f;
-    movepos.m_positionY = 0.f;
-    movepos.m_positionZ = 0.f;
-    aftercastTargetGuid = ObjectGuid::Empty;
-
-    shouldEnterVehicle = false;
-
-    _saveDisabledSpellsTimer = 0;
-    _saveDisabledSpells = false;
-    _saveMiscValuesTimer = 0;
-    _saveMiscValues = false;
-
-    _deathsCount = 0;
-    _killsCount = 0;
-    _pvpKillsCount = 0;
-    _playerKillsCount = 0;
-
-    for (uint8 i = SPELL_SCHOOL_HOLY; i != MAX_SPELL_SCHOOL; ++i)
-        resistbonus[i - 1] = 0;
-
-    botPet = nullptr;
-    canUpdate = true;
-    _duringTeleport = false;
-    _canAppearInWorld = false;
-
-    teleHomeEvent = nullptr;
-    teleFinishEvent = nullptr;
-    awaitStateRemEvent = nullptr;
-
-    _lastZoneId = 0;
-    _lastAreaId = 0;
-    _lastWMOAreaId = 0;
-
-    _selfrez_spell_id = 0;
-
-    _wmoAreaUpdateTimer = 0;
-
-    _rentTimer = 0;
-
-    _contestedPvPTimer = 0;
-    _groupUpdateTimer = BOT_GROUP_UPDATE_TIMER;
-
-    _ownerGuid = 0;
-
-    _wanderer = false;
-    _baseLevel = 0;
-    _travel_node_last = nullptr;
-    _travel_node_cur = nullptr;
-
-    _groupUpdateMask = 0;
-    _auraRaidUpdateMask = 0;
-    _bg = nullptr;
-
-    opponent = nullptr;
-    disttarget = nullptr;
 
     ResetBotAI(BOTAI_RESET_INIT);
 
@@ -317,20 +194,35 @@ bot_ai::~bot_ai()
         if (_equips[i])
             delete _equips[i];
 
-    delete _classinfo;
-
     if (!IsTempBot())
         BotDataMgr::UnregisterBot(me);
 }
 
-uint16 bot_ai::Rand() const
+ObjectGuid::LowType bot_ai::GetBotOwnerGuid() const
 {
-    return __rand;
+    return _botData->owner;
 }
-//0-178
-void bot_ai::GenerateRand() const
+bool bot_ai::HasSharedOwner(ObjectGuid::LowType guid_low) const
 {
-    __rand = urand(0, IAmFree() ? 100 : 100 + (master->GetNpcBotsCount() - 1) * 2);
+    return _botData->shared_owners.contains(guid_low);
+}
+bool bot_ai::HasOwner(ObjectGuid::LowType guid_low) const
+{
+    if (guid_low == _botData->owner)
+        return true;
+    if (HasSharedOwner(guid_low))
+        return true;
+    return false;
+}
+bool bot_ai::IsSharedBot() const
+{
+    return !IAmFree() && master->GetGUID().GetCounter() != _botData->owner && HasSharedOwner(master->GetGUID().GetCounter());
+}
+
+//0-178
+void bot_ai::GenerateRand()
+{
+    _rand = urand(0, IAmFree() ? 100 : 100 + (master->GetNpcBotsCount() - 1) * 2);
 }
 
 const std::string& bot_ai::LocalizedNpcText(Player const* forPlayer, uint32 textId)
@@ -453,7 +345,7 @@ bool bot_ai::SetBotOwner(Player* newowner)
 
     if (newowner->GetBotMgr()->AddBot(me) & BOT_ADD_FATAL)
     {
-        checkMasterTimer += 30000;
+        _checkMasterTimer += 30000;
         return false;
     }
 
@@ -467,7 +359,6 @@ bool bot_ai::SetBotOwner(Player* newowner)
         return true;
 
     master = newowner;
-    _ownerGuid = newowner->GetGUID().GetCounter();
     _checkOwershipTimer = BotMgr::GetOwnershipExpireTime() ? CalculateOwnershipCheckTime() : 0;
 
     return true;
@@ -575,9 +466,11 @@ void bot_ai::CheckOwnerExpiry()
         }
 
         //hard reset owner
-        _ownerGuid = 0;
         uint32 newOwner = 0;
         BotDataMgr::UpdateNpcBotData(me->GetEntry(), NPCBOT_UPDATE_OWNER, &newOwner);
+        //...shared owners
+        NpcBotData::SharedOwnersContainer sharedOwners{};
+        BotDataMgr::UpdateNpcBotData(me->GetEntry(), NPCBOT_UPDATE_SHARED_OWNERS, &sharedOwners);
         //...spec
         uint8 spec = SelectSpecForClass(_botExtras->bclass);
         BotDataMgr::UpdateNpcBotData(me->GetEntry(), NPCBOT_UPDATE_SPEC, &spec);
@@ -609,10 +502,7 @@ void bot_ai::ResetBotAI(uint8 resetType)
     if (resetType & BOTAI_RESET_MASK_RESET_MASTER)
         master = reinterpret_cast<Player*>(me);
     if (resetType & BOTAI_RESET_MASK_ABANDON_MASTER)
-    {
-        _ownerGuid = 0;
         _rentTimer = 0;
-    }
     if (resetType == BOTAI_RESET_INIT || resetType == BOTAI_RESET_LOGOUT)
     {
         _checkOwershipTimer = (BotMgr::GetOwnershipExpireTime() && _botData->owner) ? (resetType == BOTAI_RESET_INIT) ? 1000 : CalculateOwnershipCheckTime() : 0;
@@ -2379,8 +2269,6 @@ void bot_ai::SetStats(bool force)
         InitSpells(); //this must stay before class passives
         ApplyClassPassives();
 
-        sObjectMgr->GetPlayerClassLevelInfo(GetPlayerClass(), std::min<uint8>(mylevel, DEFAULT_MAX_LEVEL), _classinfo);
-
         PlayerLevelInfo info;
         sObjectMgr->GetPlayerLevelInfo(GetPlayerRace(), GetPlayerClass(), std::min<uint8>(mylevel, DEFAULT_MAX_LEVEL), &info);
         for (uint8 i = STAT_STRENGTH; i != MAX_STATS; ++i)
@@ -3489,7 +3377,7 @@ void bot_ai::ReceiveEmote(Player* player, uint32 emote)
 
             std::ostringstream report;
             report << "Bot " << me->GetName() << " (" << me->GetEntry() << "), "
-                << "ai owner: " << _ownerGuid << ", data owner: " << _botData->owner << ", master guid: " << master->GetGUID().ToString() << ", "
+                << "owner: " << _botData->owner << ", master guid: " << master->GetGUID().ToString() << ", "
                 << "command states: " << _botCommandState << ", await states: " << uint32(_botAwaitState);
 
             report << "\nunit flags:";
@@ -3515,7 +3403,7 @@ void bot_ai::ReceiveEmote(Player* player, uint32 emote)
                 report << "\n  npcbot flags missing (current: " << ct->flags_extra << ", missing: " << (CREATURE_FLAG_EXTRA_NPCBOT & ~ct->flags_extra) << ")! Forcing flags...";
                 ct->flags_extra |= CREATURE_FLAG_EXTRA_NPCBOT;
             }
-            if (_ownerGuid)
+            if (_botData->owner)
             {
                 if (HasBotCommandState(BOT_COMMAND_UNBIND))
                 {
@@ -3528,19 +3416,14 @@ void bot_ai::ReceiveEmote(Player* player, uint32 emote)
                     report << "\n  master->GetGUID() == me->GetGUID()";
                     invalid_master = true;
                 }
-                if (_ownerGuid != _botData->owner)
-                {
-                    report << "\n  _ownerGuid != _botData->owner";
-                    invalid_master = true;
-                }
                 if (master->GetGUID() == me->GetGUID())
                 {
-                    report << "\n  _ownerGuid != master->GetGUID().GetRawValue()";
+                    report << "\n  _botData->owner != master->GetGUID().GetRawValue()";
                     invalid_master = true;
                 }
                 if (invalid_master)
                 {
-                    if (Player* real_owner = ObjectAccessor::FindPlayerByLowGUID(_ownerGuid))
+                    if (Player* real_owner = ObjectAccessor::FindPlayerByLowGUID(_botData->owner))
                     {
                         report << "\n  owner is in world by bot isn't owned by it";
                         if (!SetBotOwner(real_owner))
@@ -3548,7 +3431,7 @@ void bot_ai::ReceiveEmote(Player* player, uint32 emote)
                     }
                     else
                     {
-                        ObjectGuid owner_guid = ObjectGuid::Create<HighGuid::Player>(_ownerGuid);
+                        ObjectGuid owner_guid = ObjectGuid::Create<HighGuid::Player>(_botData->owner);
                         real_owner = ObjectAccessor::FindConnectedPlayer(owner_guid);
                         if (real_owner)
                             report << "\n  owner is found (connected) but not in world!";
@@ -7272,10 +7155,13 @@ uint32 bot_ai::RaceSpellForClass(uint8 myrace, uint8 myclass)
 void bot_ai::_OnHealthUpdate() const
 {
     uint8 mylevel = master->GetLevel();
+    PlayerClassLevelInfo classinfo;
+    sObjectMgr->GetPlayerClassLevelInfo(GetPlayerClass(), std::min<uint8>(mylevel, DEFAULT_MAX_LEVEL), &classinfo);
+
     //BOT_LOG_ERROR("entities.player", "_OnHealthUpdate(): updating bot {}", me->GetName());
     bool fullhp = me->GetHealth() == me->GetMaxHealth();
     float pct = fullhp ? 100.f : me->GetHealthPct(); // needs for regeneration
-    uint32 m_basehp = uint32(_classinfo->basehealth * (BotMgr::IsWanderingWorldBot(me) ? BotMgr::GetBotWandererHPMod() : BotMgr::GetBotHPMod()));
+    uint32 m_basehp = uint32(classinfo.basehealth * (BotMgr::IsWanderingWorldBot(me) ? BotMgr::GetBotWandererHPMod() : BotMgr::GetBotHPMod()));
     //BOT_LOG_ERROR("entities.player", "class base health: {}", m_basehp);
     me->SetCreateHealth(m_basehp);
 
@@ -7323,11 +7209,13 @@ void bot_ai::_OnManaUpdate() const
         return;
 
     uint8 mylevel = master->GetLevel();
+    PlayerClassLevelInfo classinfo;
+    sObjectMgr->GetPlayerClassLevelInfo(GetPlayerClass(), std::min<uint8>(mylevel, DEFAULT_MAX_LEVEL), &classinfo);
 
     //BOT_LOG_ERROR("entities.player", "_OnManaUpdate(): updating bot {}", me->GetName());
     bool fullmana = me->GetPower(POWER_MANA) == me->GetMaxPower(POWER_MANA);
     float pct = fullmana ? 100.f : (float(me->GetPower(POWER_MANA)) * 100.f) / float(me->GetMaxPower(POWER_MANA));
-    float m_basemana = _classinfo->basemana;
+    float m_basemana = classinfo.basemana;
     if (_botclass == BOT_CLASS_BM)
         m_basemana = float(BASE_MANA_1_BM) + float(BASE_MANA_10_BM - BASE_MANA_1_BM) * (mylevel/81.f);
     if (_botclass == BOT_CLASS_SPHYNX)
@@ -7785,13 +7673,13 @@ void bot_ai::OnSpellHitTarget(Unit* /*target*/, SpellInfo const* spell)
         //Flame Spike, Revivify
         if (spellId == 56091 || spellId == 57090)
         {
-            vehcomboPoints = std::min(vehcomboPoints + 1, 5);
-            //BOT_LOG_ERROR("scripts", "OnBotSpellGo(): veh cp spell {} now cp {}", curInfo->Id, uint32(vehcomboPoints));
+            _vehcomboPoints = std::min(_vehcomboPoints + 1, 5);
+            //BOT_LOG_ERROR("scripts", "OnBotSpellGo(): veh cp spell {} now cp {}", curInfo->Id, uint32(_vehcomboPoints));
         }
         //Engulf in Flames, Life Burst, Flame Shield   moved to globalupdate
         if (spellId == 56092 || spellId == 57143 || spellId == 57108)
         {
-            vehcomboPoints = 0;
+            _vehcomboPoints = 0;
             //BOT_LOG_ERROR("scripts", "OnSpellHitTarget(): veh cp waster {}", curInfo->Id);
         }
     }
@@ -7804,11 +7692,11 @@ bool bot_ai::Wait()
         return true;
 
     if (IAmFree())
-        waitTimer = (me->IsInCombat() || me->GetVictim() || IsCasting() || me->GetMap()->IsBattlegroundOrArena()) ? 500 : ((__rand + 100) * 20);
+        waitTimer = (me->IsInCombat() || me->GetVictim() || IsCasting() || me->GetMap()->IsBattlegroundOrArena()) ? 500 : ((_rand + 100) * 20);
     else if (master->GetMap()->GetEntry()->IsWorldMap() && !me->IsInCombat() && !IsCasting())
-        waitTimer = std::min<uint32>(uint32(50 * (master->GetNpcBotsCount() - 1) + __rand), 500);
+        waitTimer = std::min<uint32>(uint32(50 * (master->GetNpcBotsCount() - 1) + _rand), 500);
     else
-        waitTimer = __rand;
+        waitTimer = _rand;
 
     waitTimer += BotMgr::GetBaseUpdateDelay();
 
@@ -7982,71 +7870,71 @@ bool bot_ai::OnGossipHello(Player* player, uint32 /*option*/)
 
     bool menus = false;
 
+    const uint32 player_guidlow = player->GetGUID().GetCounter();
+    const bool shared_owner = _botData->owner != player_guidlow && HasSharedOwner(player_guidlow);
+
     if (player->IsGameMaster())
     {
         AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_DEBUG), GOSSIP_SENDER_DEBUG, GOSSIP_ACTION_INFO_DEF + 1);
         menus = true;
     }
 
-    if (player->GetGUID().GetCounter() != _ownerGuid)
+    if (player_guidlow != _botData->owner && IAmFree() && !IsWanderer())
     {
-        if (IAmFree() && !IsWanderer())
+        uint32 cost = BotMgr::GetNpcBotCostHire(player->GetLevel(), _botclass);
+
+        int8 reason = 0;
+        if (me->HasAura(BERSERK))
+            reason = -1;
+        if (!reason && _botData->owner)
+            reason = 1;
+        if (!reason && BotDataMgr::GetOwnedBotsCount(player->GetGUID()) >= BotMgr::GetMaxNpcBots(player->GetLevel()))
+            reason = 2;
+        if (!reason && !player->HasEnoughMoney(cost))
+            reason = 3;
+        if (!reason && BotMgr::GetMaxClassBots() && BotDataMgr::GetOwnedBotsCount(player->GetGUID(), me->GetClassMask()) >= BotMgr::GetMaxClassBots())
+            reason = 4;
+
+        std::ostringstream message1;
+        std::ostringstream message2;
+        if (_botclass == BOT_CLASS_SPHYNX)
         {
-            uint32 cost = BotMgr::GetNpcBotCostHire(player->GetLevel(), _botclass);
-
-            int8 reason = 0;
-            if (me->HasAura(BERSERK))
-                reason = -1;
-            if (!reason && _ownerGuid)
-                reason = 1;
-            if (!reason && BotDataMgr::GetOwnedBotsCount(player->GetGUID()) >= BotMgr::GetMaxNpcBots(player->GetLevel()))
-                reason = 2;
-            if (!reason && !player->HasEnoughMoney(cost))
-                reason = 3;
-            if (!reason && BotMgr::GetMaxClassBots() && BotDataMgr::GetOwnedBotsCount(player->GetGUID(), me->GetClassMask()) >= BotMgr::GetMaxClassBots())
-                reason = 4;
-
-            std::ostringstream message1;
-            std::ostringstream message2;
-            if (_botclass == BOT_CLASS_SPHYNX)
-            {
-                message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_SPHYNX_1) << me->GetName() << LocalizedNpcText(player, BOT_TEXT_HIREWARN_SPHYNX_2);
-                message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_SPHYNX);
-            }
-            else if (_botclass == BOT_CLASS_DREADLORD)
-            {
-                message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_DREADLORD) << me->GetName() << '?';
-                message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_DREADLORD);
-            }
-            else if (_botclass == BOT_CLASS_SEA_WITCH)
-            {
-                message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_SEAWITCH);
-                message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_SEAWITCH);
-            }
-            else if (_botclass == BOT_CLASS_CRYPT_LORD)
-            {
-                message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_CRYPTLORD);
-                message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_CRYPTLORD);
-            }
-            else
-            {
-                message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_DEFAULT) << me->GetName() << '?';
-                message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_DEFAULT);
-            }
-
-            if (BotMgr::GetNpcBotCostRent(player->GetLevel(), _botclass))
-                message1 << "\n(" << BotMgr::GetNpcBotCostStr(player->GetLevel(), _botclass) << ")";
-
-            if (!reason)
-                player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TAXI, message2.str(), GOSSIP_SENDER_HIRE, GOSSIP_ACTION_INFO_DEF + 0, message1.str(), cost, false);
-            else
-                AddGossipItemFor(player, GOSSIP_ICON_TAXI, message2.str(), GOSSIP_SENDER_HIRE, GOSSIP_ACTION_INFO_DEF + reason);
-
-            menus = true;
+            message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_SPHYNX_1) << me->GetName() << LocalizedNpcText(player, BOT_TEXT_HIREWARN_SPHYNX_2);
+            message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_SPHYNX);
         }
+        else if (_botclass == BOT_CLASS_DREADLORD)
+        {
+            message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_DREADLORD) << me->GetName() << '?';
+            message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_DREADLORD);
+        }
+        else if (_botclass == BOT_CLASS_SEA_WITCH)
+        {
+            message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_SEAWITCH);
+            message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_SEAWITCH);
+        }
+        else if (_botclass == BOT_CLASS_CRYPT_LORD)
+        {
+            message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_CRYPTLORD);
+            message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_CRYPTLORD);
+        }
+        else
+        {
+            message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_DEFAULT) << me->GetName() << '?';
+            message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_DEFAULT);
+        }
+
+        if (BotMgr::GetNpcBotCostRent(player->GetLevel(), _botclass))
+            message1 << "\n(" << BotMgr::GetNpcBotCostStr(player->GetLevel(), _botclass) << ")";
+
+        if (!reason)
+            player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TAXI, message2.str(), GOSSIP_SENDER_HIRE, GOSSIP_ACTION_INFO_DEF + 0, message1.str(), cost, false);
+        else
+            AddGossipItemFor(player, GOSSIP_ICON_TAXI, message2.str(), GOSSIP_SENDER_HIRE, GOSSIP_ACTION_INFO_DEF + reason);
+
+        menus = true;
     }
 
-    if (_ownerGuid)
+    if (_botData->owner)
     {
         Group const* gr = player->GetGroup();
 
@@ -8187,10 +8075,17 @@ bool bot_ai::OnGossipHello(Player* player, uint32 /*option*/)
                     break;
             }
 
-            std::ostringstream astr;
-            astr << LocalizedNpcText(player, BOT_TEXT_ABANDON_WARN_1) << me->GetName() << "? " << (BotMgr::IsEnrageOnDimissEnabled() ? LocalizedNpcText(player, BOT_TEXT_ABANDON_WARN_2) : "");
-            player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TAXI, LocalizedNpcText(player, BOT_TEXT_UR_DISMISSED),
-                GOSSIP_SENDER_DISMISS, GOSSIP_ACTION_INFO_DEF + 1, astr.str(), 0, false);
+            if (!shared_owner)
+            {
+                std::ostringstream astr;
+                astr << LocalizedNpcText(player, BOT_TEXT_ABANDON_WARN_1) << me->GetName() << "? " << (BotMgr::IsEnrageOnDimissEnabled() ? LocalizedNpcText(player, BOT_TEXT_ABANDON_WARN_2) : "");
+                player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TAXI, LocalizedNpcText(player, BOT_TEXT_UR_DISMISSED),
+                    GOSSIP_SENDER_DISMISS, GOSSIP_ACTION_INFO_DEF + 1, astr.str(), 0, false);
+            }
+
+            if (BotMgr::IsSharedOwnerOptionEnabled(SharedOwnerOptionMask::SHARED_OWNER_OPTION_MASK_ENABLE))
+                if (!shared_owner || BotMgr::IsSharedOwnerOptionEnabled(SharedOwnerOptionMask::SHARED_OWNER_OPTION_MASK_MANAGE_OWNERS))
+                    AddGossipItemFor(player, GOSSIP_ICON_TALK, LocalizedNpcText(player, BOT_TEXT_MANAGE_OWNERSHIP), GOSSIP_SENDER_OWNERSHIP, GOSSIP_ACTION_INFO_DEF + 1);
 
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_PULL_URSELF), GOSSIP_SENDER_TROUBLESHOOTING, GOSSIP_ACTION_INFO_DEF + 1);
         }
@@ -8262,6 +8157,9 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
 
     player->PlayerTalkClass->ClearMenus();
     bool subMenu = false;
+
+    const ObjectGuid::LowType player_guidlow = player->GetGUID().GetCounter();
+    const bool shared_owner = _botData->owner != player_guidlow && HasSharedOwner(player_guidlow);
 
     switch (sender)
     {
@@ -8993,15 +8891,18 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
         {
             subMenu = true;
 
+            const bool can_change_equips = !shared_owner || BotMgr::IsSharedOwnerOptionEnabled(SharedOwnerOptionMask::SHARED_OWNER_OPTION_MASK_EQUIPMENT);
+
             //show inventory
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_SHOW_INVENTORY), GOSSIP_SENDER_EQUIPMENT_LIST, GOSSIP_ACTION_INFO_DEF + 1);
 
             //gear bank
-            if (BotMgr::IsGearBankEnabled())
+            if (BotMgr::IsGearBankEnabled() && can_change_equips)
                 AddGossipItemFor(player, GOSSIP_ICON_TALK, LocalizedNpcText(player, BOT_TEXT_BOT_GEAR_BANK), GOSSIP_SENDER_EQUIPMENT_BANK_MENU, GOSSIP_ACTION_INFO_DEF + 1);
 
             //auto-equip
-            AddGossipItemFor(player, GOSSIP_ICON_TALK, LocalizedNpcText(player, BOT_TEXT_AUTOEQUIP) + "...", GOSSIP_SENDER_EQUIP_AUTOEQUIP, GOSSIP_ACTION_INFO_DEF + 1);
+            if (can_change_equips)
+                AddGossipItemFor(player, GOSSIP_ICON_TALK, LocalizedNpcText(player, BOT_TEXT_AUTOEQUIP) + "...", GOSSIP_SENDER_EQUIP_AUTOEQUIP, GOSSIP_ACTION_INFO_DEF + 1);
 
             //weapons
             AddGossipItemFor(player, GOSSIP_ICON_TALK, LocalizedNpcText(player, BOT_TEXT_SLOT_MH) + "...", GOSSIP_SENDER_EQUIPMENT_SHOW, GOSSIP_ACTION_INFO_DEF + uint32(BOT_SLOT_MAINHAND));
@@ -9033,14 +8934,20 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                 AddGossipItemFor(player, GOSSIP_ICON_TALK, LocalizedNpcText(player, BOT_TEXT_SLOT_NECK) + "...", GOSSIP_SENDER_EQUIPMENT_SHOW, GOSSIP_ACTION_INFO_DEF + uint32(BOT_SLOT_NECK));
             }
 
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL), GOSSIP_SENDER_UNEQUIP_ALL,
-                GOSSIP_ACTION_INFO_DEF + 1, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL) + "?", 0, false);
-            if (BotMgr::IsGearBankEnabled())
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL) + LocalizedNpcText(player, BOT_TEXT___GEAR_BANK_),
-                    GOSSIP_SENDER_UNEQUIP_ALL_TO_GEARBANK, GOSSIP_ACTION_INFO_DEF + 1, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL) + LocalizedNpcText(player, BOT_TEXT___GEAR_BANK_) + "?", 0, false);
+            if (can_change_equips)
+            {
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL), GOSSIP_SENDER_UNEQUIP_ALL,
+                    GOSSIP_ACTION_INFO_DEF + 1, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL) + "?", 0, false);
 
-            if (creature->GetCreatureTemplate()->unit_flags2 & UNIT_FLAG2_MIRROR_IMAGE)
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_UPDATE_VISUAL), GOSSIP_SENDER_MODEL_UPDATE, GOSSIP_ACTION_INFO_DEF + 1);
+                if (BotMgr::IsGearBankEnabled())
+                {
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL) + LocalizedNpcText(player, BOT_TEXT___GEAR_BANK_),
+                        GOSSIP_SENDER_UNEQUIP_ALL_TO_GEARBANK, GOSSIP_ACTION_INFO_DEF + 1, LocalizedNpcText(player, BOT_TEXT_UNEQUIP_ALL) + LocalizedNpcText(player, BOT_TEXT___GEAR_BANK_) + "?", 0, false);
+                }
+
+                if (creature->GetCreatureTemplate()->unit_flags2 & UNIT_FLAG2_MIRROR_IMAGE)
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_UPDATE_VISUAL), GOSSIP_SENDER_MODEL_UPDATE, GOSSIP_ACTION_INFO_DEF + 1);
+            }
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_BACK), 1, GOSSIP_ACTION_INFO_DEF + 1);
 
             break;
@@ -9309,62 +9216,67 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
         {
             subMenu = true;
 
+            const bool can_change_equips = !shared_owner || BotMgr::IsSharedOwnerOptionEnabled(SharedOwnerOptionMask::SHARED_OWNER_OPTION_MASK_EQUIPMENT);
+
             EquipmentInfo const* einfo = BotDataMgr::GetBotEquipmentInfo(me->GetEntry());
             std::set<uint32> itemList, idsList;
 
             //s2.1: build list
             //s2.1.1: backpack
-            for (uint8 i = INVENTORY_SLOT_ITEM_START; i != INVENTORY_SLOT_ITEM_END; ++i)
+            if (can_change_equips)
             {
-                if (Item const* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                for (uint8 i = INVENTORY_SLOT_ITEM_START; i != INVENTORY_SLOT_ITEM_END; ++i)
                 {
-                    bool standard = false;
-                    for (uint8 j = 0; j != MAX_EQUIPMENT_ITEMS; ++j)
+                    if (Item const* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
                     {
-                        if (einfo->ItemEntry[j] == pItem->GetEntry())
+                        bool standard = false;
+                        for (uint8 j = 0; j != MAX_EQUIPMENT_ITEMS; ++j)
                         {
-                            standard = true;
-                            break;
+                            if (einfo->ItemEntry[j] == pItem->GetEntry())
+                            {
+                                standard = true;
+                                break;
+                            }
+                        }
+                        if (standard)
+                            continue;
+                        if (_canEquip(pItem->GetTemplate(), action - GOSSIP_ACTION_INFO_DEF, true, pItem) &&
+                            /*itemList.find(pItem->GetGUID().GetCounter()) == itemList.end() &&*/
+                            (pItem->GetItemRandomPropertyId() == 0 ? idsList.find(pItem->GetEntry()) == idsList.end() : true))
+                        {
+                            itemList.insert(pItem->GetGUID().GetCounter());
+                            idsList.insert(pItem->GetEntry());
                         }
                     }
-                    if (standard)
-                        continue;
-                    if (_canEquip(pItem->GetTemplate(), action - GOSSIP_ACTION_INFO_DEF, true, pItem) &&
-                        /*itemList.find(pItem->GetGUID().GetCounter()) == itemList.end() &&*/
-                        (pItem->GetItemRandomPropertyId() == 0 ? idsList.find(pItem->GetEntry()) == idsList.end() : true))
-                    {
-                        itemList.insert(pItem->GetGUID().GetCounter());
-                        idsList.insert(pItem->GetEntry());
-                    }
                 }
-            }
 
-            //s2.1.2: other bags
-            for (uint8 i = INVENTORY_SLOT_BAG_START; i != INVENTORY_SLOT_BAG_END; ++i)
-            {
-                if (Bag const* pBag = player->GetBagByPos(i))
+                //s2.1.2: other bags
+                for (uint8 i = INVENTORY_SLOT_BAG_START; i != INVENTORY_SLOT_BAG_END; ++i)
                 {
-                    for (uint32 j = 0; j != pBag->GetBagSize(); ++j)
+                    if (Bag const* pBag = player->GetBagByPos(i))
                     {
-                        if (Item const* pItem = player->GetItemByPos(i, j))
+                        for (uint32 j = 0; j != pBag->GetBagSize(); ++j)
                         {
-                            bool standard = false;
-                            for (uint8 k = 0; k != MAX_EQUIPMENT_ITEMS; ++k)
+                            if (Item const* pItem = player->GetItemByPos(i, j))
                             {
-                                if (einfo->ItemEntry[k] == pItem->GetEntry())
+                                bool standard = false;
+                                for (uint8 k = 0; k != MAX_EQUIPMENT_ITEMS; ++k)
                                 {
-                                    standard = true;
-                                    break;
+                                    if (einfo->ItemEntry[k] == pItem->GetEntry())
+                                    {
+                                        standard = true;
+                                        break;
+                                    }
                                 }
-                            }
-                            if (standard)
-                                continue;
-                            if (_canEquip(pItem->GetTemplate(), action - GOSSIP_ACTION_INFO_DEF, true, pItem) &&
-                                /*itemList.find(pItem->GetGUID().GetCounter()) == itemList.end() &&*/
-                                (pItem->GetItemRandomPropertyId() == 0 ? idsList.find(pItem->GetEntry()) == idsList.end() : true))
-                            {
-                                itemList.insert(pItem->GetGUID().GetCounter());
-                                idsList.insert(pItem->GetEntry());
+                                if (standard)
+                                    continue;
+                                if (_canEquip(pItem->GetTemplate(), action - GOSSIP_ACTION_INFO_DEF, true, pItem) &&
+                                    /*itemList.find(pItem->GetGUID().GetCounter()) == itemList.end() &&*/
+                                    (pItem->GetItemRandomPropertyId() == 0 ? idsList.find(pItem->GetEntry()) == idsList.end() : true))
+                                {
+                                    itemList.insert(pItem->GetGUID().GetCounter());
+                                    idsList.insert(pItem->GetEntry());
+                                }
                             }
                         }
                     }
@@ -9389,7 +9301,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
 
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, str.str(), GOSSIP_SENDER_EQUIPMENT_INFO, action);
 
-                if (!visual_only && BotMgr::DisplayEquipment() && BotMgr::IsTransmogEnabled() && slot < BOT_TRANSMOG_INVENTORY_SIZE && CanDisplayNonWeaponEquipmentChanges())
+                if (can_change_equips && !visual_only && BotMgr::DisplayEquipment() && BotMgr::IsTransmogEnabled() && slot < BOT_TRANSMOG_INVENTORY_SIZE && CanDisplayNonWeaponEquipmentChanges())
                     AddGossipItemFor(player, GOSSIP_ICON_TALK, LocalizedNpcText(player, BOT_TEXT_TRANSMOGRIFICATION), GOSSIP_SENDER_EQUIP_TRANSMOGS, action);
             }
             else
@@ -9398,7 +9310,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, str.str(), GOSSIP_SENDER_EQUIPMENT_SHOW, action);
             }
 
-            if (_equips[slot])
+            if (can_change_equips && _equips[slot])
             {
                 //s2.2.1 add unequip option if have weapon (GMs only)
                 if (slot <= BOT_SLOT_RANGED)
@@ -9430,67 +9342,70 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
             }
 
             //s2.2.3a: add an empty submenu with info if no items are found
-            if (itemList.empty())
+            if (can_change_equips)
             {
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_NOTHING_TO_GIVE), 0, GOSSIP_ACTION_INFO_DEF + 1);
-            }
-            else
-            {
-                uint32 counter = 0;
-                const uint32 maxcounter = BOT_GOSSIP_MAX_ITEMS - 6; //unequip, unequip (gear bank), reset, current, transmog, back
-                Item const* item;
-                //s2.2.3b: add items as gossip options
-                for (std::set<uint32>::const_iterator itr = itemList.begin(); itr != itemList.end() && counter < maxcounter; ++itr)
+                if (itemList.empty())
                 {
-                    bool found = false;
-                    for (uint8 i = INVENTORY_SLOT_ITEM_START; i != INVENTORY_SLOT_ITEM_END; ++i)
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_NOTHING_TO_GIVE), 0, GOSSIP_ACTION_INFO_DEF + 1);
+                }
+                else
+                {
+                    uint32 counter = 0;
+                    const uint32 maxcounter = BOT_GOSSIP_MAX_ITEMS - 6; //unequip, unequip (gear bank), reset, current, transmog, back
+                    Item const* item;
+                    //s2.2.3b: add items as gossip options
+                    for (std::set<uint32>::const_iterator itr = itemList.begin(); itr != itemList.end() && counter < maxcounter; ++itr)
                     {
-                        item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i);
-                        if (item && item->GetGUID().GetCounter() == (*itr))
+                        bool found = false;
+                        for (uint8 i = INVENTORY_SLOT_ITEM_START; i != INVENTORY_SLOT_ITEM_END; ++i)
                         {
-                            std::ostringstream name;
-                            _AddItemLink(player, item, name);
-                            name << " GS: " << uint32(CalculateItemGearScore(item->GetTemplate(), me->GetEntry(), me->GetLevel(), GetBotClass(), GetSpec(), slot));
-                            if (BotMgr::SendEquipListItems())
-                                BotWhisper(name.str(), player);
-                            AddGossipItemFor(player, GOSSIP_ICON_CHAT, name.str(), GOSSIP_SENDER_EQUIP + slot, GOSSIP_ACTION_INFO_DEF + item->GetGUID().GetCounter());
-                            ++counter;
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (found)
-                        continue;
-
-                    for (uint8 i = INVENTORY_SLOT_BAG_START; i != INVENTORY_SLOT_BAG_END; ++i)
-                    {
-                        if (Bag const* pBag = player->GetBagByPos(i))
-                        {
-                            for (uint32 j = 0; j != pBag->GetBagSize(); ++j)
+                            item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+                            if (item && item->GetGUID().GetCounter() == (*itr))
                             {
-                                item = player->GetItemByPos(i, j);
-                                if (item && item->GetGUID().GetCounter() == (*itr))
-                                {
-                                    std::ostringstream name;
-                                    _AddItemLink(player, item, name);
-                                    name << " GS: " << uint32(CalculateItemGearScore(item->GetTemplate(), me->GetEntry(), me->GetLevel(), GetBotClass(), GetSpec(), slot));
-                                    if (BotMgr::SendEquipListItems())
-                                        BotWhisper(name.str(), player);
-                                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, name.str(), GOSSIP_SENDER_EQUIP + slot, GOSSIP_ACTION_INFO_DEF + item->GetGUID().GetCounter());
-                                    ++counter;
-                                    found = true;
-                                    break;
-                                }
+                                std::ostringstream name;
+                                _AddItemLink(player, item, name);
+                                name << " GS: " << uint32(CalculateItemGearScore(item->GetTemplate(), me->GetEntry(), me->GetLevel(), GetBotClass(), GetSpec(), slot));
+                                if (BotMgr::SendEquipListItems())
+                                    BotWhisper(name.str(), player);
+                                AddGossipItemFor(player, GOSSIP_ICON_CHAT, name.str(), GOSSIP_SENDER_EQUIP + slot, GOSSIP_ACTION_INFO_DEF + item->GetGUID().GetCounter());
+                                ++counter;
+                                found = true;
+                                break;
                             }
                         }
 
                         if (found)
-                            break;
-                    }
+                            continue;
 
-                    if (found)
-                        continue;
+                        for (uint8 i = INVENTORY_SLOT_BAG_START; i != INVENTORY_SLOT_BAG_END; ++i)
+                        {
+                            if (Bag const* pBag = player->GetBagByPos(i))
+                            {
+                                for (uint32 j = 0; j != pBag->GetBagSize(); ++j)
+                                {
+                                    item = player->GetItemByPos(i, j);
+                                    if (item && item->GetGUID().GetCounter() == (*itr))
+                                    {
+                                        std::ostringstream name;
+                                        _AddItemLink(player, item, name);
+                                        name << " GS: " << uint32(CalculateItemGearScore(item->GetTemplate(), me->GetEntry(), me->GetLevel(), GetBotClass(), GetSpec(), slot));
+                                        if (BotMgr::SendEquipListItems())
+                                            BotWhisper(name.str(), player);
+                                        AddGossipItemFor(player, GOSSIP_ICON_CHAT, name.str(), GOSSIP_SENDER_EQUIP + slot, GOSSIP_ACTION_INFO_DEF + item->GetGUID().GetCounter());
+                                        ++counter;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (found)
+                                break;
+                        }
+
+                        if (found)
+                            continue;
+                    }
                 }
             }
 
@@ -10762,15 +10677,15 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
             int32 reason = action - GOSSIP_ACTION_INFO_DEF;
             if (!reason)
             {
-                if (_ownerGuid)
+                if (_botData->owner)
                 {
                     //std::ostringstream ostr;
                     //std::string name;
                     //ostr << "Go away. I serve my master ";
-                    //if (sCharacterCache->GetCharacterNameByGuid(ObjectGuid(HighGuid::Player, _ownerGuid), name))
+                    //if (sCharacterCache->GetCharacterNameByGuid(ObjectGuid(HighGuid::Player, _botData->owner), name))
                     //    ostr << name;
                     //else
-                    //    ostr << "unknown (" << _ownerGuid << ')';
+                    //    ostr << "unknown (" << _botData->owner << ')';
                     //BotWhisper(ostr.str().c_str(), player);
                     ChatHandler ch(player->GetSession());
                     ch.PSendSysMessage(LocalizedNpcText(player, BOT_TEXT_HIREFAIL_OWNED).c_str(), me->GetName());
@@ -10849,10 +10764,10 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                         std::ostringstream ostr;
                         std::string name;
                         ostr << LocalizedNpcText(player, BOT_TEXT_HIREDENY_MY_MASTER_IS_);
-                        if (sCharacterCache->GetCharacterNameByGuid(ObjectGuid::Create<HighGuid::Player>(_ownerGuid), name))
+                        if (sCharacterCache->GetCharacterNameByGuid(ObjectGuid::Create<HighGuid::Player>(_botData->owner), name))
                             ostr << name;
                         else
-                            ostr << LocalizedNpcText(player, BOT_TEXT_UNKNOWN) + " (" << _ownerGuid << ')';
+                            ostr << LocalizedNpcText(player, BOT_TEXT_UNKNOWN) + " (" << _botData->owner << ')';
                         BotWhisper(ostr.str().c_str(), player);
                         ch.PSendSysMessage(LocalizedNpcText(player, BOT_TEXT_HIREFAIL_OWNED).c_str(), me->GetName());
                         break;
@@ -10930,6 +10845,49 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
             //else
                 BotSay("...", player);
 
+            break;
+        }
+        case GOSSIP_SENDER_OWNERSHIP:
+        {
+            subMenu = true;
+            const uint8 MAX_SHARED_OWNERS_TO_SHOW = BOT_GOSSIP_MAX_ITEMS - 5; // add, remove, count, owner, "..."
+            uint8 counter = 0;
+
+            if (!shared_owner || BotMgr::IsSharedOwnerOptionEnabled(SharedOwnerOptionMask::SHARED_OWNER_OPTION_MASK_ADD_OWNERS))
+                player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TABARD, LocalizedNpcText(player, BOT_TEXT_ADD_OWNER),
+                    GOSSIP_SENDER_OWNERSHIP_ADD_PRE, GOSSIP_ACTION_INFO_DEF + 1, Bcore::StringFormat("{}{}", LocalizedNpcText(player, BOT_TEXT_SHARED_BOT_WARN_ADD), "!"), 0, false);
+            if (!shared_owner || BotMgr::IsSharedOwnerOptionEnabled(SharedOwnerOptionMask::SHARED_OWNER_OPTION_MASK_REMOVE_OWNERS))
+                player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TAXI, LocalizedNpcText(player, BOT_TEXT_REMOVE_OWNER),
+                    GOSSIP_SENDER_OWNERSHIP_REMOVE, GOSSIP_ACTION_INFO_DEF + 1, {}, 0, true);
+
+
+            CharacterCacheEntry const* char_entry = sCharacterCache->GetCharacterCacheByGuid(ObjectGuid::Create<HighGuid::Player>(_botData->owner));
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, Bcore::StringFormat("{}: {} ({})",
+                LocalizedNpcText(player, BOT_TEXT_OWNER), char_entry ? char_entry->Name : LocalizedNpcText(player, BOT_TEXT_UNKNOWN), _botData->owner), sender, action);
+
+            if (!_botData->shared_owners.empty())
+            {
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, Bcore::StringFormat("{} {} {}:",
+                    LocalizedNpcText(player, BOT_TEXT_SHARED_WITH), _botData->shared_owners.size(), LocalizedNpcText(player, BOT_TEXT_PLAYERS)), sender, action);
+                for (uint32 guidlow : _botData->shared_owners)
+                {
+                    if (++counter > MAX_SHARED_OWNERS_TO_SHOW)
+                    {
+                        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "...", sender, action);
+                        break;
+                    }
+                    char_entry = sCharacterCache->GetCharacterCacheByGuid(ObjectGuid::Create<HighGuid::Player>(guidlow));
+                    std::string showner_str = Bcore::StringFormat("{} ({})", char_entry ? char_entry->Name : LocalizedNpcText(player, BOT_TEXT_UNKNOWN), guidlow);
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, showner_str, sender, action);
+                }
+            }
+            break;
+        }
+        case GOSSIP_SENDER_OWNERSHIP_ADD_PRE:
+        {
+            subMenu = true;
+            player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TABARD, LocalizedNpcText(player, BOT_TEXT_ADD_OWNER),
+                GOSSIP_SENDER_OWNERSHIP_ADD, GOSSIP_ACTION_INFO_DEF + 1, {}, 0, true);
             break;
         }
         case GOSSIP_SENDER_JOIN_GROUP:
@@ -11331,6 +11289,8 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                     {
                         uint32 newOwner = 0;
                         BotDataMgr::UpdateNpcBotData(me->GetEntry(), NPCBOT_UPDATE_OWNER, &newOwner);
+                        NpcBotData::SharedOwnersContainer sharedOwners{};
+                        BotDataMgr::UpdateNpcBotData(me->GetEntry(), NPCBOT_UPDATE_SHARED_OWNERS, &sharedOwners);
                         ResetBotAI(BOTAI_RESET_DISMISS);
                     }
                     break;
@@ -11406,7 +11366,25 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                     }
                     break;
                 }
-                case 6: //reload config
+                case 6: //list owners
+                {
+                    close = false;
+                    ChatHandler ch(player->GetSession());
+                    ch.PSendSysMessage("%s's Owners:", me->GetName());
+                    uint32 counter = 0;
+                    uint32 real_owner_guid = _botData->owner;
+                    CharacterCacheEntry const* owner_entry = sCharacterCache->GetCharacterCacheByGuid(ObjectGuid::Create<HighGuid::Player>(real_owner_guid));
+                    ch.PSendSysMessage("%u) %s (%u, main)", ++counter, owner_entry ? owner_entry->Name : LocalizedNpcText(player, BOT_TEXT_UNKNOWN), real_owner_guid);
+                    std::vector showners(_botData->shared_owners.cbegin(), _botData->shared_owners.cend());
+                    std::ranges::sort(showners);
+                    for (uint32 showner_guid : showners)
+                    {
+                        owner_entry = sCharacterCache->GetCharacterCacheByGuid(ObjectGuid::Create<HighGuid::Player>(showner_guid));
+                        ch.PSendSysMessage("%u) %s (%u)", ++counter, owner_entry ? owner_entry->Name : LocalizedNpcText(player, BOT_TEXT_UNKNOWN), showner_guid);
+                    }
+                    break;
+                }
+                case 9: //reload config
                 {
                     close = false;
                     ChatHandler ch(player->GetSession());
@@ -11442,8 +11420,8 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                 << ", spec: " << uint32(_spec) << '(' << LocalizedNpcText(player, TextForSpec(_spec)) << ')'
                 << ", faction: " << me->GetFaction()
                 << "). owner: ";
-            if (_ownerGuid && sCharacterCache->GetCharacterNameByGuid(ObjectGuid::Create<HighGuid::Player>(_ownerGuid), name))
-                ostr << name << " (" << _ownerGuid << ')';
+            if (_botData->owner && sCharacterCache->GetCharacterNameByGuid(ObjectGuid::Create<HighGuid::Player>(_botData->owner), name))
+                ostr << name << " (" << _botData->owner << ')';
             else
                 ostr << "none";
 
@@ -11454,8 +11432,9 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<List Stats>", GOSSIP_SENDER_DEBUG_ACTION, GOSSIP_ACTION_INFO_DEF + 3);
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<List Roles>", GOSSIP_SENDER_DEBUG_ACTION, GOSSIP_ACTION_INFO_DEF + 4);
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<List Spells>", GOSSIP_SENDER_DEBUG_ACTION, GOSSIP_ACTION_INFO_DEF + 5);
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<List Owners>", GOSSIP_SENDER_DEBUG_ACTION, GOSSIP_ACTION_INFO_DEF + 6);
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<List Items>", GOSSIP_SENDER_EQUIPMENT_LIST, GOSSIP_ACTION_INFO_DEF + 1);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Reload Config>", GOSSIP_SENDER_DEBUG_ACTION, GOSSIP_ACTION_INFO_DEF + 6);
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<Reload Config>", GOSSIP_SENDER_DEBUG_ACTION, GOSSIP_ACTION_INFO_DEF + 9);
 
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, LocalizedNpcText(player, BOT_TEXT_BACK), 1, GOSSIP_ACTION_INFO_DEF + 1);
             break;
@@ -11529,7 +11508,7 @@ bool bot_ai::OnGossipSelectCode(Player* player, Creature* creature/* == me*/, ui
     }
 
     uint32 gossipTextId;
-    if (player->GetGUID().GetCounter() == _ownerGuid || !IAmFree())
+    if (player->GetGUID().GetCounter() == _botData->owner || !IAmFree())
     {
         if (_botclass == BOT_CLASS_SPHYNX)
             gossipTextId = GOSSIP_NORMAL_CUSTOM_SPHYNX;
@@ -11642,6 +11621,65 @@ bool bot_ai::OnGossipSelectCode(Player* player, Creature* creature/* == me*/, ui
                 BotWhisper(LocalizedNpcText(player, BOT_TEXT_FAILED));
 
             return OnGossipSelect(player, creature, GOSSIP_SENDER_EQUIPMENT_BANK_SETS_MENU, action);
+        }
+        case GOSSIP_SENDER_OWNERSHIP_ADD:
+        {
+            std::string name_or_guid{ code };
+            ObjectGuid::LowType lowguid{};
+
+            if (Optional<decltype(lowguid)> lguid = Bcore::StringTo<decltype(lowguid)>(name_or_guid))
+                lowguid = *lguid;
+            else if (auto lg = normalizePlayerName(name_or_guid) ? sCharacterCache->GetCharacterGuidByName(name_or_guid) : ObjectGuid::Empty; lg != ObjectGuid::Empty)
+                lowguid = lg.GetCounter();
+
+            if (!lowguid)
+                BotWhisper(Bcore::StringFormat("{} ({} {} '{}')", LocalizedNpcText(player, BOT_TEXT_FAILED), LocalizedNpcText(player, BOT_TEXT_UNKNOWN), LocalizedNpcText(player, BOT_TEXT_PLAYER), lowguid));
+            else if (lowguid == _botData->owner)
+                BotWhisper(LocalizedNpcText(player, BOT_TEXT_FAILED));
+            else if (lowguid == player->GetGUID().GetCounter())
+                BotWhisper(Bcore::StringFormat("{} ({} {})", LocalizedNpcText(player, BOT_TEXT_FAILED), LocalizedNpcText(player, BOT_TEXT_CURRENT), LocalizedNpcText(player, BOT_TEXT_PLAYER)));
+            else if (HasSharedOwner(lowguid))
+                BotWhisper(LocalizedNpcText(player, BOT_TEXT_FAILED));
+            else if (_botData->shared_owners.size() >= BotMgr::GetMaxSharedOwners())
+                BotWhisper(Bcore::StringFormat("{} ({} >= {})!", LocalizedNpcText(player, BOT_TEXT_OWNERS_LIMIT_EXCEEDED), _botData->shared_owners.size(), BotMgr::GetMaxSharedOwners()));
+            else
+            {
+                _botData->shared_owners.insert(lowguid);
+                BotDataMgr::UpdateNpcBotData(me->GetEntry(), NPCBOT_UPDATE_SHARED_OWNERS, &_botData->shared_owners);
+            }
+
+            player->PlayerTalkClass->SendCloseGossip();
+            return OnGossipSelect(player, creature, GOSSIP_SENDER_OWNERSHIP, action);
+        }
+        case GOSSIP_SENDER_OWNERSHIP_REMOVE:
+        {
+            std::string name_or_guid{ code };
+            ObjectGuid::LowType lowguid{};
+
+            if (Optional<decltype(lowguid)> lguid = Bcore::StringTo<decltype(lowguid)>(name_or_guid))
+                lowguid = *lguid;
+            else if (auto lg = normalizePlayerName(name_or_guid) ? sCharacterCache->GetCharacterGuidByName(name_or_guid) : ObjectGuid::Empty; lg != ObjectGuid::Empty)
+                lowguid = lg.GetCounter();
+
+            if (!lowguid)
+                BotWhisper(Bcore::StringFormat("{} ({} {} '{}')", LocalizedNpcText(player, BOT_TEXT_FAILED), LocalizedNpcText(player, BOT_TEXT_UNKNOWN), LocalizedNpcText(player, BOT_TEXT_PLAYER), lowguid));
+            else if (!HasSharedOwner(lowguid))
+                BotWhisper(LocalizedNpcText(player, BOT_TEXT_FAILED));
+            else
+            {
+                const bool removing_self = lowguid == player->GetGUID().GetCounter();
+                if (removing_self)
+                    player->GetBotMgr()->RemoveBot(me->GetGUID(), BOT_REMOVE_BY_DEFAULT);
+
+                _botData->shared_owners.erase(lowguid);
+                BotDataMgr::UpdateNpcBotData(me->GetEntry(), NPCBOT_UPDATE_SHARED_OWNERS, &_botData->shared_owners);
+
+                if (removing_self)
+                    break;
+            }
+
+            player->PlayerTalkClass->SendCloseGossip();
+            return OnGossipSelect(player, creature, GOSSIP_SENDER_OWNERSHIP, action);
         }
         default:
             break;
@@ -14205,7 +14243,7 @@ void bot_ai::ApplyItemsSpells()
 //stats bonuses from equipment
 inline float bot_ai::_getBotStat(uint8 slot, BotStatMods stat) const
 {
-    return float(_stats[slot][stat]);
+    return static_cast<float>(_stats[slot][stat]);
 }
 
 float bot_ai::_getTotalBotStat(BotStatMods stat) const
@@ -14218,7 +14256,7 @@ float bot_ai::_getTotalBotStat(BotStatMods stat) const
     Stats fstat = STAT_STRENGTH;
     UnitMods fmod = UNIT_MOD_END;
     float fpct = 0.0f;
-    float fval = float(value);
+    float fval = static_cast<float>(value);
 
     switch (stat)
     {
@@ -14456,7 +14494,7 @@ float bot_ai::_getTotalBotStat(BotStatMods stat) const
     return fval;
 }
 
-inline float bot_ai::_getRatingMultiplier(CombatRating cr) const
+float bot_ai::_getRatingMultiplier(CombatRating cr) const
 {
     GtCombatRatingsEntry const* Rating = sGtCombatRatingsStore.LookupEntry(cr*GT_MAX_LEVEL + (me->GetLevel()-1));
     GtOCTClassCombatRatingScalarEntry const* classRating = sGtOCTClassCombatRatingScalarStore.LookupEntry((GetPlayerClass()-1)*GT_MAX_RATING + cr + 1);
@@ -14580,7 +14618,7 @@ float bot_ai::_getItemGearStatScore(ItemTemplate const* iproto, uint8 forslot, I
 
     //BOT_LOG_ERROR("scripts", "_getItemGearScore for {} - {}", proto->ItemId, proto->Name1);
 
-    ItemStatBonus istats{};
+    std::remove_cvref_t<decltype(_stats[BOT_SLOT_MAINHAND])> istats{};
     //for (uint8 i = 0; i != MAX_BOT_ITEM_MOD; ++i)
     //    BOT_LOG_ERROR("scripts", "_getItemGearScore at {} {}", uint32(i), istats[i]);
 
@@ -14792,36 +14830,37 @@ float bot_ai::_getItemGearStatScore(ItemTemplate const* iproto, uint8 forslot, I
 
 void bot_ai::_saveStats()
 {
-    NpcBotStats stats;
-    stats.entry = me->GetEntry();
-    stats.maxhealth = me->GetMaxHealth();
-    stats.maxpower = me->GetMaxPower(_botclass == BOT_CLASS_DRUID ? POWER_MANA : me->GetPowerType());
-    stats.strength = GetTotalBotStat(BOT_STAT_MOD_STRENGTH);
-    stats.agility = GetTotalBotStat(BOT_STAT_MOD_AGILITY);
-    stats.stamina = GetTotalBotStat(BOT_STAT_MOD_STAMINA);
-    stats.intellect = GetTotalBotStat(BOT_STAT_MOD_INTELLECT);
-    stats.spirit = GetTotalBotStat(BOT_STAT_MOD_SPIRIT);
-    stats.armor = me->GetArmor();
-    stats.defense = me->GetDefenseSkillValue();
-    stats.resHoly = me->GetResistance(SPELL_SCHOOL_HOLY) + resistbonus[SPELL_SCHOOL_HOLY-1];
-    stats.resFire = me->GetResistance(SPELL_SCHOOL_FIRE) + resistbonus[SPELL_SCHOOL_FIRE-1];
-    stats.resNature = me->GetResistance(SPELL_SCHOOL_NATURE) + resistbonus[SPELL_SCHOOL_NATURE-1];
-    stats.resFrost = me->GetResistance(SPELL_SCHOOL_FROST) + resistbonus[SPELL_SCHOOL_FROST-1];
-    stats.resShadow = me->GetResistance(SPELL_SCHOOL_SHADOW) + resistbonus[SPELL_SCHOOL_SHADOW-1];
-    stats.resArcane = me->GetResistance(SPELL_SCHOOL_ARCANE) + resistbonus[SPELL_SCHOOL_ARCANE-1];
-    stats.blockPct = me->GetUnitBlockChance(BASE_ATTACK, me);
-    stats.dodgePct = me->GetUnitDodgeChance(BASE_ATTACK, me);
-    stats.parryPct = me->GetUnitParryChance(BASE_ATTACK, me);
-    stats.critPct = crit + me->GetTotalAuraModifier(SPELL_AURA_MOD_WEAPON_CRIT_PERCENT) + me->GetTotalAuraModifier(SPELL_AURA_MOD_CRIT_PCT);
-    stats.attackPower = me->GetTotalAttackPowerValue(BASE_ATTACK);
-    stats.spellPower = me->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_MAGIC);
-    stats.spellPen = spellpen;
-    stats.hastePct = std::max<float>(haste, 0.f);
-    stats.hitBonusPct = std::max<float>(hit, 0.f);
-    stats.expertise = expertise;
-    stats.armorPenPct = me->GetCreatureArmorPenetrationCoef();
+    NpcBotStats stats{
+        .entry = me->GetEntry(),
+        .maxhealth = me->GetMaxHealth(),
+        .maxpower = me->GetMaxPower(_botclass == BOT_CLASS_DRUID ? POWER_MANA : me->GetPowerType()),
+        .strength = static_cast<uint32>(0.5f + GetTotalBotStat(BOT_STAT_MOD_STRENGTH)),
+        .agility = static_cast<uint32>(0.5f + GetTotalBotStat(BOT_STAT_MOD_AGILITY)),
+        .stamina = static_cast<uint32>(0.5f + GetTotalBotStat(BOT_STAT_MOD_STAMINA)),
+        .intellect = static_cast<uint32>(0.5f + GetTotalBotStat(BOT_STAT_MOD_INTELLECT)),
+        .spirit = static_cast<uint32>(0.5f + GetTotalBotStat(BOT_STAT_MOD_SPIRIT)),
+        .armor = me->GetArmor(),
+        .defense = me->GetDefenseSkillValue(),
+        .resHoly = static_cast<uint32>(std::max<int32>(0, me->GetResistance(SPELL_SCHOOL_HOLY) + resistbonus[SPELL_SCHOOL_HOLY-1])),
+        .resFire = static_cast<uint32>(std::max<int32>(0, me->GetResistance(SPELL_SCHOOL_FIRE) + resistbonus[SPELL_SCHOOL_FIRE-1])),
+        .resNature = static_cast<uint32>(std::max<int32>(0, me->GetResistance(SPELL_SCHOOL_NATURE) + resistbonus[SPELL_SCHOOL_NATURE-1])),
+        .resFrost = static_cast<uint32>(std::max<int32>(0, me->GetResistance(SPELL_SCHOOL_FROST) + resistbonus[SPELL_SCHOOL_FROST-1])),
+        .resShadow = static_cast<uint32>(std::max<int32>(0, me->GetResistance(SPELL_SCHOOL_SHADOW) + resistbonus[SPELL_SCHOOL_SHADOW-1])),
+        .resArcane = static_cast<uint32>(std::max<int32>(0, me->GetResistance(SPELL_SCHOOL_ARCANE) + resistbonus[SPELL_SCHOOL_ARCANE-1])),
+        .blockPct = me->GetUnitBlockChance(BASE_ATTACK, me),
+        .dodgePct = me->GetUnitDodgeChance(BASE_ATTACK, me),
+        .parryPct = me->GetUnitParryChance(BASE_ATTACK, me),
+        .critPct = crit + me->GetTotalAuraModifier(SPELL_AURA_MOD_WEAPON_CRIT_PERCENT) + me->GetTotalAuraModifier(SPELL_AURA_MOD_CRIT_PCT),
+        .attackPower = static_cast<uint32>(0.5f + me->GetTotalAttackPowerValue(BASE_ATTACK)),
+        .spellPower = static_cast<uint32>(std::max<int32>(0, me->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_MAGIC))),
+        .spellPen = spellpen,
+        .hastePct = std::max<float>(haste, 0.f),
+        .hitBonusPct = std::max<float>(hit, 0.f),
+        .expertise = expertise,
+        .armorPenPct = me->GetCreatureArmorPenetrationCoef()
+    };
 
-    BotDataMgr::SaveNpcBotStats(&stats);
+    BotDataMgr::SaveNpcBotStats(stats);
 }
 
 //!Copied from Player::CastItemUseSpell
@@ -14935,7 +14974,7 @@ BotEquipResult bot_ai::UnEquipAll(ObjectGuid receiver, bool store_to_bank)
             return BotEquipResult::BOT_EQUIP_RESULT_FAIL_NO_RECEIVER;
         if (!receiver.IsPlayer())
             return BotEquipResult::BOT_EQUIP_RESULT_FAIL_INVALID_RECEIVER;
-        if (receiver.GetCounter() != _ownerGuid)
+        if (receiver.GetCounter() != _botData->owner)
             return BotEquipResult::BOT_EQUIP_RESULT_FAIL_INVALID_RECEIVER;
         if (!BotDataMgr::CanDepositBotBankItemsCount(receiver, items_to_store_count))
             return BotEquipResult::BOT_EQUIP_RESULT_FAIL_NO_BANK_SPACE;
@@ -15211,7 +15250,6 @@ void bot_ai::DefaultInit()
         if (!IsTempBot())
         {
             InitFaction();
-            InitOwner();
             InitEquips();
             InitMiscValues();
         }
@@ -15312,11 +15350,6 @@ void bot_ai::InitFaction()
 void bot_ai::InitRace()
 {
     me->SetByteValue(UNIT_FIELD_BYTES_0, 0, _botExtras->race); //set race
-}
-
-void bot_ai::InitOwner()
-{
-    _ownerGuid = _botData->owner;
 }
 
 void bot_ai::InitRoles()
@@ -15728,7 +15761,7 @@ void bot_ai::InitEquips()
         {
             if (assigned_item_guids[i] != 0)
                 BOT_LOG_ERROR("npcbots", "InitEquips: bot {} {} owner {} has item guid {} assigned to slot {} which doesn't exist in DB!",
-                    me->GetEntry(), me->GetName(), _ownerGuid, assigned_item_guids[i], uint32(i));
+                    me->GetEntry(), me->GetName(), _botData->owner, assigned_item_guids[i], uint32(i));
         }
     }
 
@@ -15852,7 +15885,7 @@ void bot_ai::InitEquips()
 void bot_ai::FindMaster()
 {
     //totally free
-    if (!_ownerGuid)
+    if (!_botData->owner)
         return;
     if (me->IsInWorld() && (!_atHome || _evadeMode))
         return;
@@ -15860,10 +15893,10 @@ void bot_ai::FindMaster()
         return;
 
     //delay
-    if (checkMasterTimer > lastdiff)
+    if (_checkMasterTimer > lastdiff)
         return;
 
-    checkMasterTimer = urand(1000, 3000);
+    _checkMasterTimer = urand(1000, 3000);
 
     //already have master
     if (!IAmFree())
@@ -15871,17 +15904,19 @@ void bot_ai::FindMaster()
     if (HasBotCommandState(BOT_COMMAND_UNBIND))
         return;
 
-    if (Player* player = ObjectAccessor::FindPlayerByLowGUID(_ownerGuid))
+    for (auto const& container : { {_botData->owner}, _botData->shared_owners })
     {
-        //prevent bot being screwed up because of wrong flags
-        if (player->IsGameMaster() || player->GetSession()->isLogingOut() || player->GetSession()->PlayerLogout())
-            return;
+        for (uint32 guid_low : container)
+        {
+            if (Player* player = ObjectAccessor::FindPlayerByLowGUID(guid_low))
+            {
+                if (player->IsGameMaster() || player->GetSession()->isLogingOut() || player->GetSession()->PlayerLogout())
+                    return;
 
-        if (!SetBotOwner(player))
-            return; //fail
-
-        //if (!IsTempBot())
-        //    BotWhisper("Hey...", master);
+                if (SetBotOwner(player))
+                    return;
+            }
+        }
     }
 }
 
@@ -15898,16 +15933,11 @@ uint32 bot_ai::CalculateOwnershipCheckTime()
 
 bool bot_ai::IAmFree() const
 {
-    if (!_ownerGuid)
+    if (!_botData->owner)
         return true;
-    if (_ownerGuid != master->GetGUID().GetRawValue())
+    if (_botData->owner != master->GetGUID().GetRawValue() && !(master->GetGUID().IsPlayer() && _botData->shared_owners.contains(master->GetGUID().GetCounter())))
         return true;
-    //if (!me->HasUnitTypeMask(UNIT_MASK_MINION))
-    //    return true;
-
     return false;
-    //return (!_ownerGuid || _ownerGuid != master->GetGUID() || !me->HasUnitTypeMask(UNIT_MASK_MINION));
-    //        //has owner   and   //owner is found          and        //bound to owner
 }
 
 //UTILITIES
@@ -16652,7 +16682,7 @@ void bot_ai::OnBotOwnerSpellGo(Spell const* spell, bool ok)
         //}
 
         Vehicle const* veh = me->GetVehicle();
-        if (veh && veh->GetBase()->GetTypeId() == TYPEID_UNIT && curVehStrat == BOT_VEH_STRAT_GENERIC &&
+        if (veh && veh->GetBase()->GetTypeId() == TYPEID_UNIT && _curVehStrat == BOT_VEH_STRAT_GENERIC &&
             veh->GetBase()->ToCreature()->HasSpell(spellInfo->Id))
         {
             SpellCastTargets targets;
@@ -17096,7 +17126,7 @@ void bot_ai::DoSkytalonVehicleStrats(uint32 diff)
 
     GC_Timer = 350; //at least this delay
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 
     Creature* drake = me->GetVehicleCreatureBase();
@@ -17124,7 +17154,7 @@ void bot_ai::DoSkytalonVehicleStrats(uint32 diff)
         finishPower = 50;
     }
 
-    if (vehcomboPoints >= finishComboPoints && (Rand() < 75 + 40*(vehcomboPoints >= 5 || drakePower < finishPower)))
+    if (_vehcomboPoints >= finishComboPoints && (Rand() < 75 + 40*(_vehcomboPoints >= 5 || drakePower < finishPower)))
     {
         if (drakePower >= finishPower)
         {
@@ -17249,7 +17279,7 @@ void bot_ai::DoSkytalonVehicleStrats(uint32 diff)
     if (!drakespell)
     {
         BOT_LOG_ERROR("scripts", "DoSkytalonVehicleStrats no spell for role mask {} cp {}, power {}, target {}",
-            GetBotRoles(), uint32(vehcomboPoints), drakePower, target->GetName());
+            GetBotRoles(), uint32(_vehcomboPoints), drakePower, target->GetName());
         return;
     }
 
@@ -17267,7 +17297,7 @@ void bot_ai::DoRubyDrakeVehicleStrats(uint32 diff)
 
     GC_Timer = 350; //at least this delay
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 
     Creature* drake = me->GetVehicleCreatureBase();
@@ -17364,7 +17394,7 @@ void bot_ai::DoEmeraldDrakeVehicleStrats(uint32 diff)
             return;
     }
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 
     Aura const* pois = opponent->GetAura(50328, drake->GetGUID()); //Leeching Poison
@@ -17492,7 +17522,7 @@ void bot_ai::DoAmberDrakeVehicleStrats(uint32 diff)
 
     GC_Timer = 350; //at least this delay
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 
     Creature* drake = me->GetVehicleCreatureBase();
@@ -17616,7 +17646,7 @@ void bot_ai::DoArgentMountVehicleStrats(uint32 diff)
         }
     }
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 
     //Unit const* mmover = master->GetVehicle() ? master->GetVehicleBase() : master;
@@ -17667,7 +17697,7 @@ void bot_ai::DoDemolisherVehicleStrats(uint32 diff)
 
     GC_Timer = 350; //at least this delay
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 }
 void bot_ai::DoSiegeEngineVehicleStrats(uint32 diff)
@@ -17677,7 +17707,7 @@ void bot_ai::DoSiegeEngineVehicleStrats(uint32 diff)
 
     GC_Timer = 350; //at least this delay
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 }
 void bot_ai::DoChopperVehicleStrats(uint32 diff)
@@ -17687,7 +17717,7 @@ void bot_ai::DoChopperVehicleStrats(uint32 diff)
 
     GC_Timer = 350; //at least this delay
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 }
 void bot_ai::DoGenericVehicleStrats(uint32 diff)
@@ -17697,15 +17727,15 @@ void bot_ai::DoGenericVehicleStrats(uint32 diff)
 
     GC_Timer = 350; //at least this delay
 
-    if (!CheckVehicleAttackTarget(curVehStrat))
+    if (!CheckVehicleAttackTarget(_curVehStrat))
         return;
 }
 void bot_ai::DoVehicleStrats(BotVehicleStrats strat, uint32 diff)
 {
-    if (curVehStrat != strat)
+    if (_curVehStrat != strat)
     {
         //BOT_LOG_ERROR("scripts", "DoVehicleStrats doing strat {}", uint32(strat));
-        curVehStrat = strat;
+        _curVehStrat = strat;
     }
 
     //if (!master->GetVehicle() || me->GetVehicle()->GetCreatureEntry() != master->GetVehicle()->GetCreatureEntry())
@@ -17801,7 +17831,7 @@ void bot_ai::DoVehicleActions(uint32 diff)
         */
         default:
             strat = BOT_VEH_STRAT_GENERIC;
-            if (curVehStrat != strat)
+            if (_curVehStrat != strat)
                 BOT_LOG_DEBUG("scripts", "bot_ai DoVehicleActions: {} has to use generic strat for vehicle creature {} ({})",
                 me->GetName(), me->GetVehicleBase()->GetName(), me->GetVehicleBase()->GetEntry());
             break;
@@ -18564,7 +18594,7 @@ bool bot_ai::GlobalUpdate(uint32 diff)
 
     if (checkAurasTimer <= lastdiff)
     {
-        checkAurasTimer += uint32(__rand + __rand + (IAmFree() ? 1000 : 40 * (1 + master->GetNpcBotsCount())));
+        checkAurasTimer += uint32(_rand + _rand + (IAmFree() ? 1000 : 40 * (1 + master->GetNpcBotsCount())));
 
         //group demand
         if (!IAmFree() && HasRole(BOT_ROLE_PARTY) && (!master->GetGroup() || !master->GetGroup()->IsMember(me->GetGUID())))
@@ -18784,7 +18814,7 @@ void bot_ai::CommonTimers(uint32 diff)
     if (evadeDelayTimer > diff)     evadeDelayTimer -= diff;
     if (roleTimer > diff)           roleTimer -= diff;
     if (ordersTimer > diff)         ordersTimer -= diff;
-    if (checkMasterTimer > diff)    checkMasterTimer -= diff;
+    if (_checkMasterTimer > diff)    _checkMasterTimer -= diff;
     if (_checkOwershipTimer > diff) _checkOwershipTimer -= diff;
 
     if (_powersTimer > diff)        _powersTimer -= diff;
@@ -19027,9 +19057,26 @@ void bot_ai::Evade()
                 }
                 else
                 {
-                    homepos.Relocate(nextNode);
+                    float x = nextNode->GetPositionX();
+                    float y = nextNode->GetPositionY();
+                    float z = nextNode->GetPositionZ();
+                    float o = nextNode->GetOrientation();
+                    if (nextNode->GetProximity() > 0.5f)
+                    {
+                        float angle = frand(0.f, float(M_PI) * 2.f);
+                        float pdist = frand(0.f, nextNode->GetProximity() * 2.f);
+                        x = x + pdist * std::cos(angle);
+                        y = y + pdist * std::sin(angle);
+                        float ground = z;
+                        me->UpdateGroundPositionZ(x, y, ground);
+                        if (ground > INVALID_HEIGHT)
+                            z = ground;
+                        else
+                            z += 2.f;
+                    }
+                    homepos.Relocate(x, y, z, o);
                     if (me->GetMap()->GetEntry()->IsContinent())
-                        evadeDelayTimer = urand(3000, 7000);
+                        evadeDelayTimer = urand(_travel_node_cur->GetWaitTime().first, _travel_node_cur->GetWaitTime().second);
                     else
                     {
                         if (_travel_node_cur->HasFlag(BotWPFlags::BOTWP_FLAG_OPTIONAL_PICKUP) && !IsCasting())
@@ -20704,7 +20751,7 @@ void bot_ai::OnBotEnterVehicle(Vehicle const* vehicle)
             ASSERT(vehicle->GetBase()->SetCharmedBy(me, CHARM_TYPE_VEHICLE));
             vehicle->GetBase()->SetControlledByPlayer(true);
 
-            vehcomboPoints = 0;
+            _vehcomboPoints = 0;
             //flight mode
             switch (vehicle->GetBase()->GetEntry())
             {
@@ -20772,7 +20819,7 @@ void bot_ai::OnBotExitVehicle(Vehicle const* vehicle)
                 vehicle->GetBase()->RemoveUnitFlag(UNIT_FLAG_POSSESSED);
             vehicle->GetBase()->SetByteValue(UNIT_FIELD_BYTES_2, 1, 0);
 
-            curVehStrat = BOT_VEH_STRAT_NONE;
+            _curVehStrat = BOT_VEH_STRAT_NONE;
             if (vehicle->GetBase()->IsSummon())
                 vehicle->GetBase()->ToCreature()->DespawnOrUnsummon(1ms);
         }
@@ -21202,7 +21249,7 @@ uint8 bot_ai::GetPlayerRace() const
 
 uint8 bot_ai::GetBotComboPoints() const
 {
-    return me->GetVehicle() ? vehcomboPoints : uint8(GetAIMiscValue(BOTAI_MISC_COMBO_POINTS));
+    return me->GetVehicle() ? _vehcomboPoints : uint8(GetAIMiscValue(BOTAI_MISC_COMBO_POINTS));
 }
 
 void bot_ai::SetAIMiscValue(uint32 data, uint32 value)
@@ -21313,46 +21360,32 @@ bool bot_ai::IsPetMelee(uint32 entry)
 
 bool bot_ai::IsMeleeClass(uint8 m_class)
 {
-    return
-        (m_class == CLASS_WARRIOR || m_class == CLASS_ROGUE || m_class == CLASS_PALADIN ||
-        m_class == CLASS_DEATH_KNIGHT || m_class == BOT_CLASS_BM || m_class == BOT_CLASS_DREADLORD ||
-        m_class == BOT_CLASS_SPELLBREAKER || m_class == BOT_CLASS_CRYPT_LORD);
+    return IsBotClassMask(m_class, MELEE_BOT_CLASSES_MASK);
 }
 bool bot_ai::IsTankingClass(uint8 m_class)
 {
-    return (m_class == CLASS_WARRIOR || m_class == CLASS_PALADIN ||
-        m_class == CLASS_DEATH_KNIGHT || m_class == BOT_CLASS_SPHYNX ||
-        m_class == BOT_CLASS_SPELLBREAKER || m_class == BOT_CLASS_CRYPT_LORD);
+    return IsBotClassMask(m_class, TANKING_BOT_CLASSES_MASK);
 }
 bool bot_ai::IsBlockingClass(uint8 m_class)
 {
-    return (m_class == CLASS_WARRIOR || m_class == CLASS_PALADIN || m_class == CLASS_SHAMAN ||
-        m_class == BOT_CLASS_SPELLBREAKER);
+    return IsBotClassMask(m_class, BLOCKING_BOT_CLASSES_MASK);
 }
 bool bot_ai::IsCastingClass(uint8 m_class)
 {
     //Class can benefit from spellpower
-    return (m_class == CLASS_PALADIN || m_class == CLASS_PRIEST || m_class == CLASS_SHAMAN ||
-        m_class == CLASS_MAGE || m_class == CLASS_WARLOCK || m_class == CLASS_DRUID ||
-        m_class == BOT_CLASS_SPHYNX || m_class == BOT_CLASS_ARCHMAGE || m_class == BOT_CLASS_DREADLORD ||
-        m_class == BOT_CLASS_SPELLBREAKER || m_class == BOT_CLASS_DARK_RANGER || m_class == BOT_CLASS_NECROMANCER ||
-        m_class == BOT_CLASS_SEA_WITCH);
+    return IsBotClassMask(m_class, CASTING_BOT_CLASSES_MASK);
 }
 bool bot_ai::IsHealingClass(uint8 m_class)
 {
-    return
-        (m_class == BOT_CLASS_PRIEST || m_class == BOT_CLASS_DRUID ||
-        m_class == BOT_CLASS_SHAMAN || m_class == BOT_CLASS_PALADIN ||
-        m_class == BOT_CLASS_SPHYNX);
+    return IsBotClassMask(m_class, HEALING_BOT_CLASSES_MASK);
 }
 bool bot_ai::IsHumanoidClass(uint8 m_class)
 {
-    return m_class != BOT_CLASS_SPHYNX;
+    return IsBotClassMask(m_class, HUMANOID_BOT_CLASSES_MASK);
 }
 bool bot_ai::IsHeroExClass(uint8 m_class)
 {
-    return m_class == BOT_CLASS_BM || m_class == BOT_CLASS_ARCHMAGE || m_class == BOT_CLASS_DREADLORD ||
-        m_class == BOT_CLASS_DARK_RANGER || m_class == BOT_CLASS_SEA_WITCH || m_class == BOT_CLASS_CRYPT_LORD;
+    return IsBotClassMask(m_class, HERO_BOT_CLASSES_MASK);
 }
 bool bot_ai::IsMelee() const
 {

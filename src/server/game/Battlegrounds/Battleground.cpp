@@ -153,7 +153,8 @@ Battleground::~Battleground()
     if(m_Map)
         if (Eluna* e = m_Map->GetEluna())
             e->OnBGDestroy(this, GetTypeID(), GetInstanceID());
-#endif			 
+#endif
+
     // remove objects and creatures
     // (this is done automatically in mapmanager update, when the instance is reset after the reset time)
     uint32 size = uint32(BgCreatures.size());
@@ -946,7 +947,7 @@ void Battleground::EndBattleground(uint32 winner)
     //the type of the winner,change Team to BattlegroundTeamId,it could be better.
     if (Eluna* e = GetBgMap()->GetEluna())
         e->OnBGEnd(this, GetTypeID(), GetInstanceID(), Team(winner));
-#endif																				  
+#endif
 }
 
 uint32 Battleground::GetBonusHonorFromKill(uint32 kills) const

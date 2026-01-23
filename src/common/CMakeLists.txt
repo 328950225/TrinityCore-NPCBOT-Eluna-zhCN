@@ -76,7 +76,6 @@ if (ELUNA)
       lualib)
 endif()
 
-						  
 set_target_properties(common
   PROPERTIES
     COMPILE_WARNING_AS_ERROR ${WITH_WARNINGS_AS_ERRORS}

@@ -42,6 +42,7 @@ if(ELUNA)
 else()
   message("* Build Eluna LuaEngine  : No")
 endif()
+
 if(TOOLS)
   message("* Build map/vmap tools   : Yes (default)")
 else()

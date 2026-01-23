@@ -32,7 +32,7 @@
 #include "WorldPacket.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
-#endif					  
+#endif
 
 void WorldSession::SendTradeStatus(TradeStatusInfo const& info)
 {
@@ -352,6 +352,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& /*recvPacket*/)
             //}
         }
     }
+
 #ifdef ELUNA
     if (Eluna* e = _player->GetEluna())
     {
@@ -364,7 +365,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& /*recvPacket*/)
             return;
         }
     }
-#endif			
+#endif
 
     if (his_trade->IsAccepted())
     {
@@ -716,7 +717,8 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
             return;
         }
     }
-#endif										   
+#endif
+
     // OK start trade
     _player->m_trade = new TradeData(_player, pOther);
     pOther->m_trade = new TradeData(pOther, _player);

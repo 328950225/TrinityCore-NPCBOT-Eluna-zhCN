@@ -31,7 +31,7 @@
 #include "World.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
-#endif					  
+#endif
 #include "WorldStatePackets.h"
 
 GameEventMgr* GameEventMgr::instance()
@@ -148,7 +148,7 @@ bool GameEventMgr::StartEvent(uint16 event_id, bool overwrite)
         if (IsActiveEvent(event_id))
             if (Eluna* e = sWorld->GetEluna())
                 e->OnGameEventStart(event_id);
-#endif									
+#endif
         return false;
     }
     else
@@ -176,7 +176,7 @@ bool GameEventMgr::StartEvent(uint16 event_id, bool overwrite)
         if (IsActiveEvent(event_id))
             if (Eluna* e = sWorld->GetEluna())
                 e->OnGameEventStart(event_id);
-#endif									
+#endif
         return conditions_met;
     }
 }
@@ -219,11 +219,12 @@ void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
             CharacterDatabase.CommitTransaction(trans);
         }
     }
+
 #ifdef ELUNA
     if (!IsActiveEvent(event_id))
         if (Eluna* e = sWorld->GetEluna())
             e->OnGameEventStop(event_id);
-#endif			
+#endif
 }
 
 void GameEventMgr::LoadFromDB()

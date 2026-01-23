@@ -41,14 +41,14 @@
 #ifdef ELUNA
 #include "LuaValue.h"
 #include "ElunaMgr.h"
-#endif			
+#endif
 
 class Battleground;
 class BattlegroundMap;
 class CreatureGroup;
 #ifdef ELUNA
 class Eluna;
-#endif			
+#endif
 class GameObjectModel;
 class Group;
 class InstanceMap;
@@ -873,7 +873,7 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         MPSCQueue<FarSpellCallback> _farSpellCallbacks;
 #ifdef ELUNA
         ElunaInfo _elunaInfo;
-#endif			
+#endif
 };
 
 enum InstanceResetMethod

@@ -44,7 +44,7 @@
 #include "Totem.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
-#endif			
+#endif
 #include "Transport.h"
 #include "Unit.h"
 #include "UpdateFieldFlags.h"
@@ -1841,7 +1841,7 @@ void WorldObject::SetMap(Map* map)
     // Reset MAP processor
     if (elunaMapEvents)
         elunaMapEvents.reset();
-#endif			
+#endif
     if (IsStoredInWorldObjectGridContainer())
         m_currMap->AddWorldObject(this);
 }
@@ -3889,6 +3889,7 @@ ElunaEventProcessor* WorldObject::GetElunaEvents(int32 mapId)
     return mgr->GetObjectProcessor(info->GetProcessorId());
 }
 #endif
+
 template TC_GAME_API void WorldObject::GetGameObjectListWithEntryInGrid(std::list<GameObject*>&, uint32, float) const;
 template TC_GAME_API void WorldObject::GetGameObjectListWithEntryInGrid(std::deque<GameObject*>&, uint32, float) const;
 template TC_GAME_API void WorldObject::GetGameObjectListWithEntryInGrid(std::vector<GameObject*>&, uint32, float) const;

@@ -2,7 +2,7 @@ name: win64-ultra-build
 on:
   push:
     branches:
-      - NPCBOT-Eluna-zhCN-2026
+      - none-existing-branch
   workflow_dispatch:
 
 jobs:

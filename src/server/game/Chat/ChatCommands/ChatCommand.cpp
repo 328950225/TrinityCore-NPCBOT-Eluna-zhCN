@@ -27,7 +27,7 @@
 #include "ScriptMgr.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
-#endif		
+#endif
 #include "WorldSession.h"
 
 using ChatSubCommandMap = std::map<std::string_view, Trinity::Impl::ChatCommands::ChatCommandNode, StringCompareLessI_T>;
@@ -305,7 +305,7 @@ namespace Trinity::Impl::ChatCommands
             if (Eluna* e = sWorld->GetEluna())
                 if (!e->OnCommand(handler.IsConsole() ? nullptr : handler.GetSession()->GetPlayer(), std::string(cmdStr).c_str()))
                     return true;
-#endif			
+#endif
             cmd->SendCommandHelp(handler);
             handler.SetSentErrorMessage(true);
         }
@@ -316,7 +316,8 @@ namespace Trinity::Impl::ChatCommands
     if (Eluna* e = sWorld->GetEluna())
         if (!e->OnCommand(handler.IsConsole() ? nullptr : handler.GetSession()->GetPlayer(), std::string(cmdStr).c_str()))
             return true;
-#endif									  
+#endif
+
     return false;
 }
 

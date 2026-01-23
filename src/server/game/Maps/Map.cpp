@@ -57,11 +57,6 @@
 #include <unordered_set>
 #include <vector>
 
-//npcbot
-#include "botdatamgr.h"
-#include "botmgr.h"
-//end npcbot
-
 u_map_magic MapMagic        = { {'M','A','P','S'} };
 uint32 MapVersionMagic      = 10;
 u_map_magic MapAreaMagic    = { {'A','R','E','A'} };
@@ -291,10 +286,10 @@ i_scriptLock(false), _respawnTimes(std::make_unique<RespawnListContainer>()), _r
 #ifdef ELUNA
     if (sElunaConfig->IsElunaEnabled() && sElunaConfig->ShouldMapLoadEluna(id))
         if (!IsParentMap() || (IsParentMap() && !Instanceable()))
-    {
-        _elunaInfo = { ElunaInfoKey::MakeKey(GetId(), GetInstanceId()) };
-        sElunaMgr->Create(this, _elunaInfo);
-    }
+        {
+            _elunaInfo = { ElunaInfoKey::MakeKey(GetId(), GetInstanceId()) };
+            sElunaMgr->Create(this, _elunaInfo);
+        }
 #endif
     for (unsigned int idx=0; idx < MAX_NUMBER_OF_GRIDS; ++idx)
     {
@@ -3579,6 +3574,7 @@ void Map::DelayedUpdate(uint32 t_diff)
 void Map::AddObjectToRemoveList(WorldObject* obj)
 {
     ASSERT(obj->GetMapId() == GetId() && obj->GetInstanceId() == GetInstanceId());
+
 #ifdef ELUNA
     if (Eluna* e = GetEluna())
     {
@@ -3588,6 +3584,7 @@ void Map::AddObjectToRemoveList(WorldObject* obj)
             e->OnRemove(gameobject);
     }
 #endif
+
     obj->CleanupsBeforeDelete(false);                            // remove or simplify at least cross referenced links
 
     i_objectsToRemove.insert(obj);
@@ -3686,26 +3683,7 @@ uint32 Map::GetPlayersCountExceptGMs() const
     uint32 count = 0;
     for (MapRefManager::const_iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
         if (!itr->GetSource()->IsGameMaster())
-        //npcbot - count npcbots as group members (event if not in group)
-        {
-            if (itr->GetSource()->HaveBot() && BotMgr::LimitBots(this))
-            {
-                ++count;
-                BotMap const* botmap = itr->GetSource()->GetBotMgr()->GetBotMap();
-                for (BotMap::const_iterator itr = botmap->begin(); itr != botmap->end(); ++itr)
-                {
-                    Creature* cre = itr->second;
-                    if (!cre || !cre->IsInWorld() || cre->FindMap() != this || cre->IsTempBot())
-                        continue;
-                    ++count;
-                }
-                continue;
-            }
-        //end npcbot
             ++count;
-        //npcbot
-        }
-        //end npcbot
     return count;
 }
 
@@ -3803,10 +3781,6 @@ void Map::AddToActive(WorldObject* obj)
         GridCoord p = Trinity::ComputeGridCoord(respawnLocation->GetPositionX(), respawnLocation->GetPositionY());
         if (getNGrid(p.x_coord, p.y_coord))
             getNGrid(p.x_coord, p.y_coord)->incUnloadActiveLock();
-        //npcbot
-        else if (obj->IsNPCBot())
-            EnsureGridLoadedForActiveObject(Cell(Trinity::ComputeCellCoord(obj->GetPositionX(), obj->GetPositionY())), obj);
-        //end npcbot
         else
         {
             GridCoord p2 = Trinity::ComputeGridCoord(obj->GetPositionX(), obj->GetPositionY());
@@ -3827,11 +3801,6 @@ void Map::RemoveFromActive(WorldObject* obj)
             if (Creature* creature = obj->ToCreature(); !creature->IsPet() && creature->GetSpawnId())
             {
                 respawnLocation.emplace();
-                //npcbot: prevent crash from accessing deleted creatureData
-                if (creature->IsNPCBot())
-                    creature->GetHomePosition().GetPosition(respawnLocation->m_positionX, respawnLocation->m_positionY, respawnLocation->m_positionZ);
-                else
-                //end npcbot
                 creature->GetRespawnPosition(respawnLocation->m_positionX, respawnLocation->m_positionY, respawnLocation->m_positionZ);
             }
             break;
@@ -3851,10 +3820,6 @@ void Map::RemoveFromActive(WorldObject* obj)
         GridCoord p = Trinity::ComputeGridCoord(respawnLocation->GetPositionX(), respawnLocation->GetPositionY());
         if (getNGrid(p.x_coord, p.y_coord))
             getNGrid(p.x_coord, p.y_coord)->decUnloadActiveLock();
-        //npcbot
-        else if (obj->IsNPCBot())
-            EnsureGridLoaded(Cell(Trinity::ComputeCellCoord(obj->GetPositionX(), obj->GetPositionY())));
-        //end npcbot
         else
         {
             GridCoord p2 = Trinity::ComputeGridCoord(obj->GetPositionX(), obj->GetPositionY());
@@ -4089,7 +4054,9 @@ void InstanceMap::CreateInstanceData(bool load)
 {
     if (i_data != nullptr)
         return;
+
     bool isElunaAI = false;
+
 #ifdef ELUNA
     if (Eluna* e = GetEluna())
     {
@@ -4098,16 +4065,17 @@ void InstanceMap::CreateInstanceData(bool load)
             isElunaAI = true;
     }
 #endif
+
     // if Eluna AI was fetched succesfully we should not call CreateInstanceData nor set the unused scriptID
-   if (!isElunaAI)
-    {	 
-    InstanceTemplate const* mInstance = sObjectMgr->GetInstanceTemplate(GetId());
-    if (mInstance)
+    if (!isElunaAI)
     {
-        i_script_id = mInstance->ScriptId;
-        i_data = sScriptMgr->CreateInstanceData(this);
+        InstanceTemplate const* mInstance = sObjectMgr->GetInstanceTemplate(GetId());
+        if (mInstance)
+        {
+            i_script_id = mInstance->ScriptId;
+            i_data = sScriptMgr->CreateInstanceData(this);
+        }
     }
-    }	 
 
     if (!i_data)
         return;
@@ -4127,7 +4095,7 @@ void InstanceMap::CreateInstanceData(bool load)
             i_data->SetCompletedEncountersMask(fields[1].GetUInt32());
             if (!data.empty())
             {
-                TC_LOG_DEBUG("maps", "Loading instance data for `{}` with id {}", isElunaAI ? "ElunaAI" :  sObjectMgr->GetScriptName(i_script_id), i_InstanceId);
+                TC_LOG_DEBUG("maps", "Loading instance data for `{}` with id {}", isElunaAI ? "ElunaAI" : sObjectMgr->GetScriptName(i_script_id), i_InstanceId);
                 i_data->Load(data.c_str());
             }
         }
@@ -4561,11 +4529,6 @@ void Map::SaveRespawnTime(SpawnObjectType type, ObjectGuid::LowType spawnId, uin
 
 void Map::SaveRespawnInfoDB(RespawnInfo const& info, CharacterDatabaseTransaction dbTrans)
 {
-    //npcbot: DO NOT save npcbots respawn time
-    if (info.type == SPAWN_TYPE_CREATURE && BotDataMgr::SelectNpcBotData(info.entry))
-        return;
-    //end npcbot
-
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_RESPAWN);
     stmt->setUInt16(0, info.type);
     stmt->setUInt32(1, info.spawnId);

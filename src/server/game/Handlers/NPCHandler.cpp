@@ -39,7 +39,7 @@
 #include "SpellInfo.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
-#endif					  
+#endif
 #include "SpellMgr.h"
 #include "Trainer.h"
 #include "World.h"
@@ -190,7 +190,7 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recvData)
     if (Eluna* e = GetPlayer()->GetEluna())
         if (e->OnGossipHello(_player, unit))
             return;
-#endif										   
+#endif
     if (!unit->AI()->OnGossipHello(_player))
     {
 //        _player->TalkedToCreature(unit->GetEntry(), unit->GetGUID());

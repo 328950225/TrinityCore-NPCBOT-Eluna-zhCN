@@ -95,7 +95,7 @@ void CombatReference::EndCombat()
             if (Eluna* e = second->GetEluna())
                 e->OnPlayerLeaveCombat(player);
     }
-#endif					
+#endif
     if (needFirstAI)
         if (UnitAI* firstAI = first->GetAI())
             firstAI->JustExitedCombat();
@@ -140,9 +140,8 @@ void CombatReference::SuppressFor(Unit* who)
         if (UnitAI* ai = who->GetAI())
             ai->JustExitedCombat();
     }
-}  
-      
- 
+}
+
 bool PvPCombatReference::Update(uint32 tdiff)
 {
     if (_combatTimer <= tdiff)
@@ -381,8 +380,7 @@ void CombatManager::SuppressPvPCombat()
         if (UnitAI* ownerAI = _owner->GetAI())
             ownerAI->JustExitedCombat();
     }
-}	  
-    
+}
 
 void CombatManager::EndAllPvECombat()
 {
@@ -434,7 +432,7 @@ void CombatManager::EndAllPvPCombat()
     if (Player* player = me->ToPlayer())
         if (Eluna* e = player->GetEluna())
             e->OnPlayerEnterCombat(player, other);
-#endif										
+#endif
     if (UnitAI* ai = me->GetAI())
         ai->JustEnteredCombat(other);
 }

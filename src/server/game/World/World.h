@@ -31,7 +31,7 @@
 #include "Timer.h"
 #ifdef ELUNA
 #include "ElunaMgr.h"
-#endif					 
+#endif
 
 #include <atomic>
 #include <list>
@@ -40,7 +40,7 @@
 
 #ifdef ELUNA
 class Eluna;
-#endif			
+#endif
 class Player;
 class WorldPacket;
 class WorldSession;
@@ -777,10 +777,9 @@ class TC_GAME_API World
         bool IsGuidWarning() { return _guidWarn; }
         bool IsGuidAlert() { return _guidAlert; }
 
-
 #ifdef ELUNA
         Eluna* GetEluna() const { return sElunaMgr->Get(_elunaInfo); }
-#endif			
+#endif
     protected:
         void _UpdateGameTime();
 

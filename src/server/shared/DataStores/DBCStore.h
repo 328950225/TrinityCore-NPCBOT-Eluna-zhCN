@@ -22,7 +22,7 @@
 #include "DBCStorageIterator.h"
 #include "Errors.h"
 #include <vector>
-#include <cstring>  
+#include <cstring>
 
  /// Interface class for common access
 class TC_SHARED_API DBCStorageBase
@@ -89,6 +89,7 @@ class DBCStorage : public DBCStorageBase
             _indexTable.AsT[id] = t;
         }
 #endif
+
         uint32 GetNumRows() const { return _indexTableSize; }
 
         bool Load(char const* path) override

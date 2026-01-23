@@ -90,7 +90,7 @@
 #include "LuaEngine.h"
 #include "ElunaLoader.h"
 #include "ElunaConfig.h"
-#endif			
+#endif
 #include "WhoListStorage.h"
 #include "WorldSession.h"
 
@@ -2067,7 +2067,6 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Loading Waypoints...");
     sWaypointMgr->Load();
 
-
     TC_LOG_INFO("server.loading", "Loading Creature Formations...");
     sFormationMgr->LoadCreatureFormations();
 
@@ -2132,6 +2131,7 @@ void World::SetInitialWorldSettings()
         sElunaMgr->Create(nullptr, _elunaInfo);
     }
 #endif
+
     TC_LOG_INFO("server.loading", "Initializing Scripts...");
     sScriptMgr->Initialize();
     sScriptMgr->OnConfigLoad(false);                                // must be done after the ScriptMgr has been properly initialized
@@ -2270,6 +2270,7 @@ void World::SetInitialWorldSettings()
     if(GetEluna())
         GetEluna()->OnConfigLoad(false); // Must be done after Eluna is initialized and scripts have run.
 #endif
+
     // Preload all cells, if required for the base maps
     if (sWorld->getBoolConfig(CONFIG_BASEMAP_LOAD_GRIDS))
     {

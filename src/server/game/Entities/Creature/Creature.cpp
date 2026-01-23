@@ -54,7 +54,7 @@
 #include "WorldPacket.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
-#endif					  
+#endif
 #include <G3D/g3dmath.h>
 
 CreatureMovementData::CreatureMovementData() : Ground(CreatureGroundMovementType::Run), Flight(CreatureFlightMovementType::None), Swim(true), Rooted(false), Chase(CreatureChaseMovementType::Run),
@@ -324,7 +324,7 @@ void Creature::RemoveFromWorld()
 #ifdef ELUNA
         if (Eluna* e = GetEluna())
             e->OnRemoveFromWorld(this);
-#endif	  
+#endif
         if (GetZoneScript())
             GetZoneScript()->OnCreatureRemove(this);
 

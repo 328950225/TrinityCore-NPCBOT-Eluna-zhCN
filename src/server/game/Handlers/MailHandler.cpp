@@ -34,7 +34,7 @@
 #include "WorldPacket.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
-#endif					  
+#endif
 
 bool WorldSession::CanOpenMailBox(ObjectGuid guid)
 {
@@ -237,7 +237,8 @@ void WorldSession::HandleSendMail(WorldPackets::Mail::SendMail& sendMail)
                 return;
             }
         }
-#endif										  
+#endif
+
         player->SendMailResult(0, MAIL_SEND, MAIL_OK);
 
         player->ModifyMoney(-int32(reqmoney));

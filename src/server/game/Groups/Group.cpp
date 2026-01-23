@@ -257,7 +257,8 @@ bool Group::Create(Player* leader)
 #ifdef ELUNA
     if (Eluna* e = sWorld->GetEluna())
         e->OnCreate(this, m_leaderGuid, m_groupType);
-#endif									  
+#endif
+
     return true;
 }
 

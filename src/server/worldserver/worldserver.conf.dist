@@ -3993,7 +3993,7 @@ Logger.sql.sql=5,Console DBErrors
 Logger.sql.updates=3,Console Server
 Logger.mmaps=2,Server
 Logger.npcbots=2,NpcBots Server
-Logger.eluna=6,Console Eluna
+Logger.eluna=5,Console Eluna
 
 #Logger.achievement=3,Console Server
 #Logger.addon=3,Console Server
@@ -4255,12 +4255,12 @@ Metric.OverallStatusInterval = 1
 #
 #  Metric threshold values: Given a metric "name"
 #    Metric.Threshold.name
-#        Description: Skips sending statistics with a value lower than the config value.
-#                     If the threshold is commented out, the metric will be ignored.
-#                     Only metrics logged with TC_METRIC_DETAILED_TIMER in the sources are affected.
-#                     Disabled by default. Requires WITH_DETAILED_METRICS CMake flag.
+#        Description: 跳过发送数值低于此配置值的统计信息。
+#                     如果该阈值被注释掉，该度量指标将被忽略。
+#                     仅影响源代码中以 TC_METRIC_DETAILED_TIMER 记录的指标。
+#                     默认禁用。需要开启 WITH_DETAILED_METRICS CMake 编译标志。
 #
-#        Format:      Value as integer
+#        Format:      整数值
 #
 
 #Metric.Threshold.world_update_sessions_time = 100
@@ -4282,7 +4282,7 @@ NpcBot.Enable = 1
 
 #
 #    NpcBot.LogToDB
-#        Description: Log bot events debug info to DB. Records will be kept up to 30 days
+#        Description: 将机器人事件调试信息记录到数据库。记录将保存最多 30 天。
 #        Default:     1 - (Enable)
 #                     0 - (Disable)
 
@@ -4290,63 +4290,63 @@ NpcBot.LogToDB = 1
 
 #
 #    NpcBot.MaxBots
-#        Description: Maximum number of bots player can hire per level bracket:
-#                     0-9, 10-19, 20,29, ... , 70-79, 80+.
-#        Default:     1,1,1,1,1,1,1,1,1 - (1 for all levels)
-#                     0,1,2,3,4,5,6,7,8 - (1 per 10 levels)
+#        Description: 玩家在不同等级段可以雇佣的机器人数量上限：
+#                     0-9, 10-19, 20-29, ... , 70-79, 80+。
+#        Default:     1,1,1,1,1,1,1,1,1 - (所有等级段均为 1 个)
+#                     0,1,2,3,4,5,6,7,8 - (每提升 10 级增加 1 个)
 #        Max:         39
 
 NpcBot.MaxBots = 5,5,5,5,5,25,25,25,25
 
 #
 #    NpcBot.MaxBotsPerClass
-#        Description: Maximum number of bots player can hire per bot class.
-#        Default:     0 - no limit
+#        Description: 玩家每个职业可以雇佣的机器人数量上限。
+#        Default:     0 - 无限制
 
 NpcBot.MaxBotsPerClass = 0
 
 #
 #    NpcBot.MaxBotsPerAccount
-#        Description: Maximum total number of bots players can hire per account.
-#        Default:     0 - no limit
-#                     9 - up to 9 bots total per account
+#        Description: 每个账号下玩家可以雇佣的机器人总数上限。
+#        Default:     0 - 无限制
+#                     9 - 每个账号最多招募 9 个机器人
 
 NpcBot.MaxBotsPerAccount = 0
 
 #
 #    NpcBot.Botgiver.FilterRaces
-#        Description: Make botgiver only offer bots of player faction (normal classes).
-#        Default:     0 - disable
+#        Description: 使机器人提供者（Botgiver）仅提供所属玩家阵营的机器人（普通职业）。
+#        Default:     0 - 禁用
 
 NpcBot.Botgiver.FilterRaces = 0
 
 #
 #    NpcBot.SharedOwnership.Options
-#        Description: Bitmask describing enabled shared ownership options.
-#        Note:        WARNING! SHARED BOT OWNERSHIP ENABLES EXPLOITS! USE ON YOUR OWN RISK!
-#        Note2:       Term 'share' below refers to a player whom ownership is being shared with
+#        Description: 描述已启用的共享所有权选项的位掩码（Bitmask）。
+#        Note:        警告！共享机器人所有权可能会导致漏洞利用！请自行承担风险！
+#        Note2:       下文中的“共享者”是指被授予共享所有权的玩家。
 #        Values:
-#                     0 - Disable completely (default)
-#                     1 - Enable (allows bot owner to share their bots)
-#                     2 - Shared equipment management (including soulbound items)
-#                     4 - Shared ownership extension (allow shares to share the bot further)
-#                     8 - Shared ownership removal (allows shares to remove other shares)
+#                     0 - 完全禁用（默认）
+#                     1 - 启用（允许机器人所有者分享其机器人）
+#                     2 - 共享装备管理（包括灵魂绑定物品）
+#                     4 - 共享所有权扩展（允许共享者进一步分享该机器人）
+#                     8 - 共享所有权移除（允许共享者移除其他共享者）
 #        Notes:
-#                     Initially only bot owner can add new shares
-#                     Shares cannot remove bot owner from shared owneship list (or add to it)
-#                     Shares cannot dismiss the bot. If bot ownership expires due to bot expiry
-#                       timer equipment is always returned to the original owner. If share's bot
-#                       ownership expires due to rent cost the bot becomes unbound instead.
-#                     Bots will accept any player from total ownership list as current master,
-#                       whoever is logged in currently and will not switch until they log out,
-#                       original owner takes priority but only if bot has no master currently.
+#                     最初只有机器人所有者可以添加新的共享者。
+#                     共享者不能将机器人所有者从所有权列表中移除（或添加）。
+#                     共享者不能解雇机器人。如果机器人因到期计时器而消失，
+#                       装备总是退还给原始所有者。如果共享者的机器人所有权
+#                       因租金不足而过期，机器人将变为未绑定状态。
+#                     机器人将接受所有权列表中的任何在线玩家作为当前主人，
+#                       且在当前主人下线前不会切换。
+#                       原始所有者具有优先权，但仅在机器人当前没有主人时生效。
 
 NpcBot.SharedOwnership.Options = 0
 
 #
 #    NpcBot.SharedOwnership.MaxOwners
-#        Description: Maximum number of players a bot can be shared with (NOT counting the owner)
-#        Note:        WARNING! SHARED BOT OWNERSHIP ENABLES EXPLOITS! USE ON YOUR OWN RISK!
+#        Description: 机器人可共享的最大玩家数量（不包括所有者）。
+#        Note:        警告！共享机器人所有权可能会导致漏洞利用！请自行承担风险！
 #        Default:     0
 #        Max:         39
 
@@ -4354,10 +4354,9 @@ NpcBot.SharedOwnership.MaxOwners = 0
 
 #
 #    NpcBot.BaseFollowDistance
-#        Description: Default bot follow distance.
-#        Note:        This parameter determines bots' formation size, distance at which bots
-#                     will chase and attack enemies.
-#        Note2:       This parameter is set for each player at login.
+#        Description: 默认机器人跟随距离。
+#        Note:        此参数决定了机器人的阵型大小，以及机器人追击并攻击敌人的距离。
+#        Note2:       此参数会在每个玩家登录时进行设置。
 #        Default:     30
 
 NpcBot.BaseFollowDistance = 35
@@ -4367,16 +4366,16 @@ NpcBot.BaseFollowDistance = 35
 #    NpcBot.XpReduction.StartingNumber
 #    NpcBot.XpReduction.Blizzlike.Enable
 #    NpcBot.XpReduction.Blizzlike.GroupOnly
-#        Description: XP percent penalty for each bot used starting with <StartingNumber>.
-#                     <Blizzlike> enables group size based XP reduction counting either any bots
-#                     or bots in group only, combines multiplicatively
-#        Example:     Group of 4, 3 bots, reduction is 20, start is 2, blizzlike enabled:
-#                     (100 - ((3-(2-1))*20)) * 1.3 / 4 = 19.5% exp gained.
-#        Note:        Maximum overall xp reduction is 90%.
-#        Default:     0 - (NpcBot.XpReduction.Amount)
-#                     2 - (NpcBot.XpReduction.StartingNumber)
-#                     1 - (NpcBot.XpReduction.Blizzlike.Enable)
-#                     0 - (NpcBot.XpReduction.Blizzlike.GroupOnly)
+#        Description: 从第 <StartingNumber> 个机器人开始，每个机器人所产生的经验值 (XP) 惩罚百分比。
+#                     <Blizzlike> 启用基于小队人数的经验缩减（计算所有机器人或仅限小队内的机器人），
+#                     该缩减采用乘法叠加。
+#        Example:     4 人小队，其中 3 个机器人，缩减值为 20，起始个数为 2，且启用了 Blizzlike：
+#                     (100 - ((3-(2-1))*20)) * 1.3 / 4 = 最终获得 19.5% 的经验值。
+#        Note:        总体的最大经验缩减上限为 90%。
+#        Default:     0 - (NpcBot.XpReduction.Amount - 缩减数值)
+#                     2 - (NpcBot.XpReduction.StartingNumber - 起始机器人数量)
+#                     1 - (NpcBot.XpReduction.Blizzlike.Enable - 启用暴雪官方风格缩减)
+#                     0 - (NpcBot.XpReduction.Blizzlike.GroupOnly - 仅限小队)
 
 NpcBot.XpReduction.Amount              = 0
 NpcBot.XpReduction.StartingNumber      = 2
@@ -4386,10 +4385,10 @@ NpcBot.XpReduction.Blizzlike.GroupOnly = 0
 #
 #    NpcBot.MoneyShare.Enable
 #    NpcBot.MoneyShare.GroupOnly
-#        Description: Share money loot with bots, effectively reducing money amount players receive.
-#        Example:     Group of 5, 3 bots, looting 100 copper, players receive 20 copper each.
-#        Default:     0 - (NpcBot.MoneyShare.Enable)
-#                     0 - (NpcBot.MoneyShare.GroupOnly)
+#        Description: 与机器人平分金钱拾取，这将有效减少玩家获得的金额。
+#        Example:     5 人小队中有 3 个机器人，拾取 100 铜时，玩家每人获得 20 铜。
+#        Default:     0 - (NpcBot.MoneyShare.Enable - 启用金钱平分)
+#                     0 - (NpcBot.MoneyShare.GroupOnly - 仅限小队)
 
 NpcBot.MoneyShare.Enable    = 0
 NpcBot.MoneyShare.GroupOnly = 0
@@ -4397,9 +4396,9 @@ NpcBot.MoneyShare.GroupOnly = 0
 #
 #    NpcBot.MountLevel.60
 #    NpcBot.MountLevel.100
-#        Description: Minimum level for bots to be able to use ground mounts
-#        Default:     20 - (NpcBot.MountLevel.60)
-#                     40 - (NpcBot.MountLevel.100)
+#        Description: 机器人能够使用地面坐骑的最低等级
+#        Default:     20 - (NpcBot.MountLevel.60 - 60% 移速坐骑)
+#                     40 - (NpcBot.MountLevel.100 - 100% 移速坐骑)
 
 NpcBot.MountLevel.60  = 20
 NpcBot.MountLevel.100 = 40
@@ -4411,23 +4410,23 @@ NpcBot.MountLevel.100 = 40
 #    NpcBot.DPSTargetIconMask
 #    NpcBot.RangedDPSTargetIconMask
 #    NpcBot.NoDPSTargetIconMask
-#        Description: Icon number bitmask which bots use to search for primary attack
-#                     target, (off-)tanking target, target to heal and protect (out of party),
-#                     or target to try to not damage.
-#        Note:        Many creatures cannot accept heal.
-#        Note2:       While icon is active NPCBot ddealers/tanks will ignore any other targets
-#                     and will not break from combat to follow you.
-#        Note3:       If you set multiple targets only one target at a time will be used.
-#        Example:     To check Star, Triangle and Square we need 1 + 8 + 32 = 41.
-#        Default:     0 (Disable)
-#                     1 - Star
-#                     2 - Circle
-#                     4 - Diamond
-#                     8 - Triangle
-#                     16 - Moon
-#                     32 - Square
-#                     64 - Cross
-#                     128 - Skull
+#        Description: 团队标记图标位掩码（Bitmask）。机器人根据此设置寻找首要攻击目标、
+#                     （副）坦克目标、需要治疗和保护的目标（小队成员外），
+#                     或者是尝试不对其造成伤害的目标。
+#        Note:        许多生物无法接受治疗。
+#        Note2:       当标记激活时，NPCBot 输出者/坦克将忽略任何其他目标，
+#                     且不会脱离战斗来跟随你。
+#        Note3:       如果你设置了多个目标，同一时间只有一个目标会生效。
+#        Example:     若要检测 星星、三角 和 方块，我们需要 1 + 8 + 32 = 41。
+#        Default:     0 (禁用)
+#                     1 - 星星 (Star)
+#                     2 - 圆圈 (Circle)
+#                     4 - 菱形 (Diamond)
+#                     8 - 三角 (Triangle)
+#                     16 - 月亮 (Moon)
+#                     32 - 方块 (Square)
+#                     64 - 叉叉 (Cross)
+#                     128 - 骷髅 (Skull)
 #1-星
 #2-圈
 #4-钻石
@@ -4448,8 +4447,8 @@ NpcBot.NoDPSTargetIconMask = 0
 #    NpcBot.Mult.Damage.Spell
 #    NpcBot.Mult.Healing
 #    NpcBot.Mult.HP
-#        Description: Multipliers for bots' damage, healing, etc. Allows to balance bots vs players.
-#                     Only affects normal spawned bots and generated wandering bot in BGs.
+#        Description: 机器人伤害、治疗等属性的倍率。允许平衡机器人与玩家之间的强度。
+#                     仅影响正常生成的机器人以及在战场中生成的游荡机器人。
 #        Default:     1.0
 #        Minimum:     0.1
 #        Maximum:    10.0
@@ -4464,8 +4463,8 @@ NpcBot.Mult.HP              = 1.0
 #    NpcBot.Mult.Wanderer.Healing
 #    NpcBot.Mult.Wanderer.HP
 #    NpcBot.Mult.Wanderer.Speed
-#        Description: Multipliers for wandering bots' damage, healing, hp and speed.
-#                     Only affects wandering bots in open world.
+#        Description: 游荡机器人的伤害、治疗、生命值和速度倍率。
+#                     仅影响开放世界中的游荡机器人。
 #        Default:     1.0
 #        Minimum:     0.1
 #        Maximum:    10.0
@@ -4477,7 +4476,7 @@ NpcBot.Mult.Wanderer.Speed   = 1.0
 
 #
 #    NpcBot.Mult.Damage.<Class>
-#        Description: Multipliers for bots' damage by class. Allows to balance dps between bot classes.
+#        Description: 机器人的伤害倍率（按职业）。允许在不同职业的机器人之间平衡 DPS。
 #        Default:     1.0
 #        Minimum:     0.1
 #        Maximum:    10.0
@@ -4507,8 +4506,8 @@ NpcBot.Mult.Damage.CryptLord         = 1.0
 #    NpcBot.Mult.Healing.Levels
 #    NpcBot.Mult.HP.Levels
 #    NpcBot.Mult.MP.Levels
-#        Description: Multipliers for bots' damage/healing/hp/mp by level: 0-9,10-19,...,70-79,80+
-#                     At least 9 values required each.
+#        Description: 机器人伤害/治疗/生命值/法力值的倍率，按等级分段：0-9, 10-19, ..., 70-79, 80+
+#                     每项至少需要提供 9 个数值。
 #        Default:     1.0
 #        Minimum:     0.1
 #        Maximum:    10.0
@@ -4524,12 +4523,12 @@ NpcBot.Mult.MP.Levels      = 1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0
 #    NpcBot.Enable.BG
 #    NpcBot.Enable.Arena
 #    NpcBot.Enable.DungeonFinder
-#        Description: Allow bots to enter PvE/PvP areas and Dungeon Finder query.
-#        Default:     1 - (NpcBot.Enable.Dungeon)
-#                     0 - (NpcBot.Enable.Raid)
-#                     0 - (NpcBot.Enable.BG)
-#                     0 - (NpcBot.Enable.Arena)
-#                     1 - (NpcBot.Enable.DungeonFinder)
+#        Description: 允许机器人进入 PvE/PvP 区域以及地下城查找器队列。
+#        Default:     1 - (NpcBot.Enable.Dungeon - 地下城)
+#                     0 - (NpcBot.Enable.Raid - 团队副本)
+#                     0 - (NpcBot.Enable.BG - 战场)
+#                     0 - (NpcBot.Enable.Arena - 竞技场)
+#                     1 - (NpcBot.Enable.DungeonFinder - 地下城查找器)
 
 NpcBot.Enable.Dungeon       = 1
 NpcBot.Enable.Raid          = 1
@@ -4539,10 +4538,10 @@ NpcBot.Enable.DungeonFinder = 1
 
 #
 #    NpcBot.DisableInstances
-#        Description: When NpcBot.Enable.Dungeon or/and NpcBot.Enable.Raid options are set to 1
-#                     excludes certain instance map ids, preventing bots from entering those maps
-#        Default:     "" - (None)
-#                     "509,531" - (Disable AQ20 and AQ40)
+#        Description: 当 NpcBot.Enable.Dungeon 或/以及 NpcBot.Enable.Raid 选项设置为 1 时，
+#                     排除特定的副本场景地图 ID，防止机器人进入这些地图。
+#        Default:     "" - (无)
+#                     "509,531" - (禁用安其拉废墟 AQ20 和安其拉神殿 AQ40)
 
 NpcBot.DisableInstances = ""
 
@@ -4559,23 +4558,23 @@ NpcBot.Limit.Raid    = 1
 #
 #    NpcBot.HideSpawns
 #        Description: Prevent inactive bots from entering world
-#        Note:        Botgiver npc will become the only way to hire bots
-#        Note2:       Only GM's presense will reveal bot's spawn location (temporarily)
-#        Default:     1 - (Enabled)
-#                     0 - (Disabled, keep all spawned bots in world)
+#        Note:        Botgiver NPC 将成为雇佣机器人的唯一途径。
+#        Note2:       只有 GM 的出现才会（暂时性地）显现机器人的生成位置。
+#        Default:     1 - (启用)
+#                     0 - (禁用，将所有已生成的机器人保留在世界中)
 
-NpcBot.HideSpawns = 1
+NpcBot.HideSpawns = 0
 
 #
 #    NpcBot.Cost.Hire
 #    NpcBot.Cost.Rent
-#        Description: Bot recruitment cost (in copper). Hire cost is the amount player has to pay
-#                     to recruit a bot. Rent cost is the amount player has to pay per 1 hour
-#                     to keep a bot with them, bot is automatically removed if player doesn't have
-#                     enough money to pay the rent cost.
-#        Note1:       Hire cost is for level 80 characters, for lower levels cost is reduced greatly
-#        Note2:       Rent is collected every 10 minutes so at least 6 copper per hour is taken
-#        Default:     1000000 - (NpcBot.Cost.Hire, 100 gold)
+#        Description: 机器人招募费用（以铜为单位）。雇佣费用是玩家招募机器人时
+#                     需要支付的金额。租用费用是玩家每小时为维持机器人跟随
+#                     而需要支付的金额，如果玩家没有足够的钱支付租金，
+#                     机器人将被自动移除。
+#        Note1:       雇佣费用针对 80 级角色，低等级角色的费用会大幅降低。
+#        Note2:       租金每 10 分钟收取一次，因此每小时至少扣除 6 铜。
+#        Default:     1000000 - (NpcBot.Cost.Hire，100 金)
 #                     0       - (NpcBot.Cost.Rent)
 
 NpcBot.Cost.Hire = 1000000
@@ -4583,23 +4582,23 @@ NpcBot.Cost.Rent = 0
 
 #
 #    NpcBot.UpdateDelay.Base
-#        Description: Base delay between bot AI update cycles (in milliseconds).
-#        Note:        This parameter allows you to increase reaction time and slow down bots
-#                     in general. This may be useful if you want to balance bots in PvP.
-#        Note2:       This value is added on top of existing semi-randomized delay.
-#        Default:     0 (No additional delay)
+#        Description: 机器人 AI 更新周期之间的基础延迟（以毫秒为单位）。
+#        Note:        此参数允许您增加机器人的反应时间并整体放慢其动作。
+#                     如果您想平衡 PvP 中的机器人表现，这会非常有用。
+#        Note2:       该数值将叠加在现有的半随机延迟之上。
+#        Default:     0 (无额外延迟)
 
 NpcBot.UpdateDelay.Base = 511
 
 #
 #    NpcBot.EngageDelay.DPS
 #    NpcBot.EngageDelay.Heal
-#        Description: Delay for first healing / non-tank damage after target was engaged
-#                     by tank (in milliseconds).
-#        Note:        This does not affect only bosses - all combat except PvP will be affected.
-#        Note2:       This value affects all owned bots and is set for every player at login.
-#        Default:     0 - (No delay)
-#                     1000 - (1 second)
+#        Description: 坦克进入战斗后，治疗或非坦克伤害（输出）开始动作的延迟时间
+#                     （以毫秒为单位）。
+#        Note:        此设置不仅影响首领（Boss）战——除 PvP 外的所有战斗都会受到影响。
+#        Note2:       此数值影响所有拥有的机器人，并在每个玩家登录时进行设置。
+#        Default:     0    - (无延迟)
+#                     1000 - (1 秒)
 
 NpcBot.EngageDelay.DPS  = 0
 NpcBot.EngageDelay.Heal = 0
@@ -4614,62 +4613,62 @@ NpcBot.PvP = 1
 
 #
 #    NpcBot.Movements.InterruptFood
-#        Description: Remove food and drink auras when starting to move.
-#        Note:        Bots don't use food or drink if not standing still.
-#        Default:     0 - (Do not interrupt)
-#                     1 - (Interrupt food and drink)
+#        Description: 开始移动时移除食物和饮料的光环（Buff）。
+#        Note:        如果不是处于静止状态，机器人不会使用食物或饮料。
+#        Default:     0 - (不中断)
+#                     1 - (中断进食和饮水)
 
 NpcBot.Movements.InterruptFood = 1
 
 #
 #    NpcBot.EquipmentDisplay.Enable
-#        Description: Enable displaying equipment changes other than weapons on bot models.
-#        Note:        Client limits equipment updates to
-#                     1) relog
-#                     2) taking a taxi flight
-#                     3) teleporting between maps
-#                     4) not seeing this bot for 3 minutes
-#                     5) bot changing displayId (polymorph, shapeshift, etc.)
-#        Note2:       If client registers (5) of a single bot 3+ times
-#                     said client may crash at exiting game (Error #132) unless (4) happens.
-#        Note3:       Changing this setting requires server restart.
-#        Note4:       Bots having no equipment will not appear naked.
-#        Default:     1 - (Enabled)
-#                     0 - (Disabled)
+#        Description: 允许在机器人模型上显示除武器以外的装备变更。
+#        Note:        客户端对装备更新的触发限制于：
+#                     1) 重新登录
+#                     2) 乘坐飞行坐骑（公共航空）
+#                     3) 在地图间传送
+#                     4) 离开该机器人视野范围超过 3 分钟
+#                     5) 机器人更改了显示 ID（变形术、变身等）
+#        Note2:       如果客户端针对同一个机器人记录了 3 次及以上第 (5) 种情况，
+#                     除非发生第 (4) 种情况，否则客户端在退出游戏时可能会崩溃（Error #132）。
+#        Note3:       更改此设置需要重启服务器。
+#        Note4:       未穿戴装备的机器人不会显示为裸体。
+#        Default:     1 - (启用)
+#                     0 - (禁用)
 
 NpcBot.EquipmentDisplay.Enable = 1
 
 #
 #    NpcBot.EquipmentDisplay.ShowCloak
 #    NpcBot.EquipmentDisplay.ShowHelm
-#        Description: Equipment display rules.
-#        Default:     1 - (NpcBot.EquipmentDisplay.ShowCloak)
-#                     1 - (NpcBot.EquipmentDisplay.ShowHelm)
+#        Description: 装备显示规则。
+#        Default:     1 - (NpcBot.EquipmentDisplay.ShowCloak - 显示披风)
+#                     1 - (NpcBot.EquipmentDisplay.ShowHelm - 显示头盔)
 
 NpcBot.EquipmentDisplay.ShowCloak = 1
 NpcBot.EquipmentDisplay.ShowHelm  = 1
 
 #
 #    NpcBot.Transmog.Enable
-#        Description: Enable transmogrification of bots' equipment.
+#        Description: 启用机器人装备的幻化功能。
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 
-NpcBot.Transmog.Enable = 0
+NpcBot.Transmog.Enable = 1
 
 #
 #    NpcBot.Transmog.MixArmorClasses
 #    NpcBot.Transmog.MixWeaponClasses
 #    NpcBot.Transmog.MixWeaponInventoryTypes
 #    NpcBot.Transmog.UseEquipmentSlots
-#        Description: Enable different armor/weapon types to be transmogrified from one to another
-#                     (i.e. plate to leather, axe to mace, dagger to polearm).
-#                     'NpcBot.Transmog.UseEquipmentSlots' makes transmog affect equipment slots
-#                     instead of item IDs and forces all other options.
-#        Default:     0 - (NpcBot.Transmog.MixArmorClasses)
-#                     0 - (NpcBot.Transmog.MixWeaponClasses)
-#                     0 - (NpcBot.Transmog.MixWeaponInventoryTypes)
-#                     0 - (NpcBot.Transmog.UseEquipmentSlots)
+#        Description: 允许不同类型的护甲/武器之间进行幻化
+#                     （例如：板甲幻化为皮甲，斧幻化为锤，匕首幻化为长柄武器）。
+#                     'NpcBot.Transmog.UseEquipmentSlots' 使幻化作用于装备栏
+#                     而非物品 ID，并强制开启所有其他选项。
+#        Default:     0 - (NpcBot.Transmog.MixArmorClasses - 混合护甲类别)
+#                     0 - (NpcBot.Transmog.MixWeaponClasses - 混合武器类别)
+#                     0 - (NpcBot.Transmog.MixWeaponInventoryTypes - 混合武器槽位类型)
+#                     0 - (NpcBot.Transmog.UseEquipmentSlots - 使用装备栏位幻化)
 
 NpcBot.Transmog.MixArmorClasses = 0
 NpcBot.Transmog.MixWeaponClasses = 0
@@ -4678,7 +4677,7 @@ NpcBot.Transmog.UseEquipmentSlots = 0
 
 #
 #    NpcBot.Gossip.ShowEquipmentListItems
-#        Description: Send whisper message with clickable items list in equipment gossip menu.
+#        Description: 在装备对话菜单中发送包含可点击物品列表的密语消息。
 #        Default:     0 - (Disable)
 #                     1 - (Enable)
 
@@ -4686,35 +4685,35 @@ NpcBot.Gossip.ShowEquipmentListItems = 0
 
 #
 #    NpcBot.GearBank.Enable
-#        Description: Enable extra bot gear storage, accessed through gossip menu (per player).
-#        Default:     1 - (Enabled)
-#                     0 - (Disabled)
+#        Description: 启用额外的机器人装备仓库，通过对话菜单访问（按玩家统计）。
+#        Default:     1 - (启用)
+#                     0 - (禁用)
 
 NpcBot.GearBank.Enable = 1
 
 #
 #    NpcBot.GearBank.Capacity
-#        Description: Maximum number of items player can keep in bot gear storage.
-#        Note:        This parameter only affects player's ability to *deposit* items.
-#        Default:     40 - (Maximum 40 items)
-#                     0  - (Unlimited capacity)
+#        Description: 玩家在机器人装备仓库中可以存放物品的最大数量。
+#        Note:        此参数仅影响玩家“存入”物品的能力。
+#        Default:     40 - (最多 40 件物品)
+#                     0  - (容量无限)
 
 NpcBot.GearBank.Capacity = 40
 
 #
 #    NpcBot.GearBank.EquipmentSets
-#        Description: Enable players to create bot equipment sets from items currently equipped
-#                     on a bot, allowing to quickly swap bot equipment using gear bank as storage.
-#        Default:     0  - (Disabled)
-#                     10 - (Enabled, allow to keep up to 10 equipment sets per player)
-#                     30 - (Absolute maximum to fit on a single page, this is a hard limit)
+#        Description: 允许玩家根据机器人当前装备的物品创建机器人装备套装，
+#                     并允许使用装备银行作为存储，从而快速更换机器人装备。
+#        Default:     0  - (禁用)
+#                     10 - (启用，允许每个玩家保存最多 10 套装备套装)
+#                     30 - (单页显示的绝对上限，这是一个硬限制)
 
-NpcBot.GearBank.EquipmentSets = 0
+NpcBot.GearBank.EquipmentSets = 10
 
 #
 #    NpcBot.Classes.<Class>.Enable
-#        Description: Allow players to hire bots of certain classes.
-#        Note:        Some non-standard class abilities may be unbalanced or game breaking.
+#        Description: 允许玩家雇佣特定职业的机器人。
+#        Note:        某些非标准职业的技能可能存在不平衡或破坏游戏平衡的情况。
 #        Default:     1 - (NpcBot.Classes.Warrior.Enable)
 #                     1 - (NpcBot.Classes.Paladin.Enable)
 #                     1 - (NpcBot.Classes.Hunter.Enable)
@@ -4764,9 +4763,9 @@ NpcBot.Stats.Limits.Enable = 1
 
 #
 #    NpcBot.Stats.Limits.<Stat>
-#        Description: Set dodge, parry, block and crit chance percentage limit for bots.
-#        Note:        Some bot classes may ignore some of these values.
-#        Note2:       Auras can still increase these stats above limit.
+#        Description: 为机器人设置躲闪、招架、格挡和暴击几率的百分比上限。
+#        Note:        某些机器人职业可能会忽略其中的部分数值。
+#        Note2:       光环（Auras）效果仍然可以将这些属性提升至上限以上。
 #        Default:     95.0 (95%)
 
 NpcBot.Stats.Limits.Dodge = 95.0
@@ -4776,78 +4775,77 @@ NpcBot.Stats.Limits.Crit  = 95.0
 
 #
 #    NpcBot.InfoPacketsLimit
-#        Description: This is a workaround for known issue #5.
-#                     If more than 100 bots are spawned in a single spot players trying
-#                     to approach them will be kicked by AntiDOS protection due to
-#                     'flooding' CMSG_GET_MIRRORIMAGE_DATA packets. This setting
-#                     overrides packets limit per tick for that request type.
-#        Note:        If you care about your server stability at all, use this only as a
-#                     temporary solution and spread your bots spawn points properly.
-#        Default:     -1  - (use default limit set by TC devs)
-#                     500 - (500 bots in one spot won't get you kicked)
+#        Description: 这是针对已知问题 #5 的临时解决方案。
+#                     如果超过 100 个机器人在同一地点生成，试图靠近他们的玩家
+#                     会因为‘泛滥’发送 CMSG_GET_MIRRORIMAGE_DATA 数据包而被
+#                     AntiDOS 防护系统踢出。此设置会覆盖该请求类型每刻（Tick）的数据包限制。
+#        Note:        如果您在意服务器的稳定性，请仅将其作为临时方案，
+#                     并合理分散机器人的生成点。
+#        Default:     -1  - (使用 TC 开发人员设置的默认限制)
+#                     500 - (同一地点存在 500 个机器人也不会导致您被踢出)
 
 NpcBot.InfoPacketsLimit = -1
 
 #
 #    NpcBot.OwnershipExpireTime
-#        Description: Time (in seconds) before bot ownership is automatically cancelled.
-#        Note:        NPCBot ownership may only expire after player goes offline.
-#        Note2:       All items will be mailed back to player as usual.
-#        Default:     0 - (Disabled)
-#                     604800 - (7 Days)
+#        Description: 机器人所有权自动取消前的倒计时（秒）。
+#        Note:        NPCBot 所有权仅在玩家下线后才会开始过期倒计时。
+#        Note2:       所有装备物品将照常邮寄回玩家。
+#        Default:     0 - (禁用)
+#                     604800 - (7 天)
 
 NpcBot.OwnershipExpireTime = 0
 
 #
 #    NpcBot.OwnershipExpireMode
-#        Description: Ownership expiration mode. Determines when the timer starts.
-#        Default:     0 - (Player goes offline, timer resets if player logs back in)
-#                     1 - (Player hires the bot, timer never resets)
+#        Description: 拥有权过期模式。决定计时器何时开始计时。
+#        Default:     0 - (当玩家下线时计时，若玩家重新登录则计时器重置)
+#                     1 - (当玩家雇佣机器人时计时，计时器永不重置)
 
 NpcBot.OwnershipExpireMode = 0
 
 #
 #    NpcBot.EnrageOnDismiss
-#        Description: Enable Berserk buff when bot is dismissed and related hostile reaction.
+#        Description: 当机器人被解雇时，启用狂暴（Berserk）增益以及相关的敌对反应。
 #        Default:     1 - (Enabled)
 #                     0 - (Disabled)
 
-NpcBot.EnrageOnDismiss = 1
+NpcBot.EnrageOnDismiss = 0
 
 #
 #    NpcBot.WanderingBots.Continents.Count
-#        Description: Desired number of free wandering bots to generate. Wandering bots roam
-#                     around the map looking for trouble. Names and visuals are cloned from
-#                     existing non-spawned bots. Wandering bots aren't saved in DB.
-#        Note:        Wandering bots keep grids loaded, increasing CPU and memory usage.
-#        Note2:       You must have at least this number of non-spawned bots in creature_template.
-#        Default:     0 - (Disabled)
+#        Description: 期望生成的自由漫游机器人的数量。漫游机器人会在地图上
+#                     四处游荡寻找麻烦。它们的名字和外观是从数据库中
+#                     现有的、未被召唤的机器人中克隆而来的。漫游机器人不会保存在数据库中。
+#        Note:        漫游机器人会保持所在区域的网格（Grid）处于加载状态，这会增加 CPU 和内存的使用率。
+#        Note2:       你必须确保 creature_template 表中至少拥有此数量的、未被召唤的机器人模板。
+#        Default:     0 - (禁用)
 
-NpcBot.WanderingBots.Continents.Count = 0
+NpcBot.WanderingBots.Continents.Count = 200
 
 #
 #    NpcBot.WanderingBots.Continents.Levels
-#        Description: Percentage of wandering bots to spawn per level bracket:
-#                     0-9, 10-19, 20,29, ... , 70-79, 80+.
-#        Note:        Total percentage must be exactly 100.
-#        Note2:       Classes with minimum level requirement may ignore this parameter.
+#        Description: 每个等级段生成的漫游机器人百分比权重：
+#                     0-9级, 10-19级, 20-29级, ... , 70-79级, 80级及以上。
+#        Note:        所有百分比的总和必须严格等于 100。
+#        Note2:       有最低等级要求的职业可能会忽略此参数设置。
 #        Default:     25,15,15,10,5,10,20,0,0
 
-NpcBot.WanderingBots.Continents.Levels = 25,15,15,10,5,10,20,0,0
+NpcBot.WanderingBots.Continents.Levels = 25,15,15,10,5,30,0,0,0
 
 #
 #    NpcBot.WanderingBots.Continents.Maps
-#        Description: Continent map IDs where wandering bots are allowed to spawn.
-#        Note:        Wandering bots will never outlevel the map they are in.
-#        Default:     0,1,530,571 - (Eastern Kingdoms, Kalimdor, Outland, Northrend)
+#        Description: 允许生成漫游机器人的大陆地图 ID。
+#        Note:        漫游机器人的等级永远不会超过它们当前所处地图的等级上限。
+#        Default:     0,1,530,571 - (东部王国, 卡利姆多, 外域, 诺森德)
 
 NpcBot.WanderingBots.Continents.Maps = 0,1,530,571
 
 #
 #    NpcBot.WanderingBots.Continents.XPGain
-#        Description: XP gained by wandering bots mutiplier. Directly affects bot leveling rate.
-#        Default:     1.0 - (100% XP gained)
-#                     0.1 - (10% XP gained)
+#        Description: 漫游机器人获得经验值的倍率。直接影响机器人的升级速度。
+#        Default:     1.0 - (100% 经验获取)
+#                     0.1 - (10% 经验获取)
 #        Minimum:     0.0
 #        Maximum:   100.0
 
@@ -4857,16 +4855,16 @@ NpcBot.WanderingBots.Continents.XPGain = 1.0
 #    NpcBot.WanderingBots.KillReward.Money
 #    NpcBot.WanderingBots.KillReward.ItemCount
 #    NpcBot.WanderingBots.KillReward.ItemQuality
-#        Description: Wandering bot kill loot reward. World maps only.
-#                     Money: Amount of money (in copper) to drop at level 80,
-#                       before level and kill count vs death count normalization.
-#                     ItemCount: Maximum number of items to drop, item ids are taken from
-#                       bot equipment. Range: 0..18.
-#                     ItemQuality: Maximum quality of dropped items. Most bots are equipped
-#                       with 2/3/4 (uncommon/rare/epic) Range: 0..7.
-#        Default:     0 - (NpcBot.WanderingBots.KillReward.Money)
-#                     0 - (NpcBot.WanderingBots.KillReward.ItemCount)
-#                     0 - (NpcBot.WanderingBots.KillReward.ItemQuality)
+#        Description: 击杀漫游机器人的战利品奖励。仅限世界地图。
+#                     Money: 80级时掉落的金钱数量（单位为铜），
+#                            实际掉落会根据等级以及击杀/死亡比进行平衡。
+#                     ItemCount: 掉落物品的最大数量，物品 ID 将从
+#                                该机器人的身上装备中随机抽取。范围: 0..18。
+#                     ItemQuality: 掉落物品的最高品质。大多数机器人装备
+#                                  品质为 2/3/4 (优秀/精良/史诗)。范围: 0..7。
+#        Default:     0 - (金钱奖励)
+#                     0 - (物品数量)
+#                     0 - (物品品质)
 
 NpcBot.WanderingBots.KillReward.Money       = 0
 NpcBot.WanderingBots.KillReward.ItemCount   = 0
@@ -4874,52 +4872,52 @@ NpcBot.WanderingBots.KillReward.ItemQuality = 0
 
 #
 #    NpcBot.WanderingBots.MaxItemLevel.Levels
-#        Description: Maximum item ilevel to generate for wandering bots per level bracket:
-#                     0-9, 10-19, 20,29, ... , 70-79, 80+.
-#        Note:        If item generation attempt fails becuse of item ilevel restriction
-#                     the item will be generated again with this restriction ignored
-#        Example:     0,0,0,0,0,0,0,0,200 makes level 80+ wandering bots only generate
-#                     items of ilevel 200 or less
+#        Description: 为不同等级段的漫游机器人生成装备时的最高物品等级（iLevel）：
+#                     0-9级, 10-19级, 20-29级, ... , 70-79级, 80级及以上。
+#        Note:        如果因为装等限制导致物品生成失败，
+#                     该物品将会忽略此限制并重新生成。
+#        Example:     0,0,0,0,0,0,0,0,200 表示让 80级及以上的漫游机器人
+#                     仅生成物品等级在 200 或以下的装备。
 #        Default:     0,0,0,0,0,0,0,0,0
 
 NpcBot.WanderingBots.MaxItemLevel.Levels = 0,0,0,0,0,0,0,0,0
 
 #
 #    NpcBot.WanderingBots.BG.Enable
-#        Description: Allow wandering bots generation for Battlegrounds.
-#        Note:        Bots are temporarily borrowed from non-spawned bots pool.
-#        Default:     0 - (Disabled)
-#                     1 - (Enable)
+#        Description: 允许在战场中生成漫游机器人。
+#        Note:        机器人是暂时从“未召唤机器人池”中借用的。
+#        Default:     0 - (禁用)
+#                     1 - (启用)
 
 NpcBot.WanderingBots.BG.Enable = 0
 
 #
 #    NpcBot.WanderingBots.BG.CapLevel
-#        Description: Enforce BG bot maximum level limit set by Expansion and MaxPlayerLevel
-#                     config paramter values.
-#        Default:     0 - (Disabled)
-#                     1 - (Enable)
+#        Description: 强制战场机器人遵守由“资料片版本”和“MaxPlayerLevel”
+#                     配置参数所设置的最高等级限制。
+#        Default:     0 - (禁用)
+#                     1 - (启用)
 
 NpcBot.WanderingBots.BG.CapLevel = 0
 
 #
 #    NpcBot.WanderingBots.BG.CapLevelByFirstPlayer
-#        Description: Prevent setting BG bot level higher than player triggering its generation
-#        Default:     0 - (Disabled)
-#                     1 - (Enable)
+#        Description: 防止生成的战场机器人等级高于触发其生成的那个玩家（即你）。
+#        Default:     0 - (禁用)
+#                     1 - (启用)
 
 NpcBot.WanderingBots.BG.CapLevelByFirstPlayer = 0
 
 #
 #    NpcBot.WanderingBots.BG.TargetTeamPlayersCount.<BGTYPE>
-#        Description: Target BG players count per team to aim for when generating BG bots.
-#        Note:        These values can't go beyond BG minimum / maximum players per team bounds.
-#        Default:     30 - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.AV)
-#                     8  - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.WS)
-#                     12 - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.AB)
-#                     12 - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.EY)
-#                     0  - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.SA) (NYI, Disabled)
-#                     0  - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.IC) (NYI, Disabled)
+#        Description: 生成战场机器人时，每支队伍期望达到的目标玩家人数。
+#        Note:        这些数值不能超出战场本身规定的每队人数最小值/最大值边界。
+#        Default:     30 - (大战场：奥特兰克山谷 AV)
+#                     8  - (小战场：战歌峡谷 WS)
+#                     12 - (中型战场：阿拉希盆地 AB)
+#                     12 - (中型战场：风暴之眼 EY)
+#                     0  - (远古海滩 SA) (尚未实现，禁用)
+#                     0  - (征服之岛 IC) (尚未实现，禁用)
 
 NpcBot.WanderingBots.BG.TargetTeamPlayersCount.AV = 30
 NpcBot.WanderingBots.BG.TargetTeamPlayersCount.WS = 8
@@ -4930,8 +4928,8 @@ NpcBot.WanderingBots.BG.TargetTeamPlayersCount.IC = 0
 
 #
 #    NpcBot.WanderingBots.Classes.<Class>.Enable
-#        Description: Allow players to hire bots of certain classes.
-#        Note:        Some non-standard class abilities may be unbalanced or game breaking.
+#        Description: 允许玩家雇佣特定职业的机器人。
+#        Note:        某些非标准职业的技能可能存在不平衡或破坏游戏平衡的情况。
 #        Default:     1 - (NpcBot.Classes.Warrior.Enable)
 #                     1 - (NpcBot.Classes.Paladin.Enable)
 #                     1 - (NpcBot.Classes.Hunter.Enable)
@@ -4975,10 +4973,10 @@ NpcBot.WanderingBots.Classes.CryptLord.Enable         = 1
 #
 #    NpcBot.WanderingBots.SkipTarget.Questgiver
 #    NpcBot.WanderingBots.SkipTarget.Flightmaster
-#        Description: Make wandering bots skip certain npc types when selecting attack target.
-#        Note:        This option does not apply to npcs engaging the bot on their own accord.
-#        Default:     0 - (NpcBot.WanderingBots.SkipTarget.Questgiver)
-#                     0 - (NpcBot.WanderingBots.SkipTarget.Flightmaster)
+#        Description: 使漫游机器人在选择攻击目标时跳过特定类型的 NPC。
+#        Note:        此选项不适用于那些主动向机器人发起攻击的 NPC。
+#        Default:     0 - (NpcBot.WanderingBots.SkipTarget.Questgiver - 任务 NPC)
+#                     0 - (NpcBot.WanderingBots.SkipTarget.Flightmaster - 飞行管理员)
 
 NpcBot.WanderingBots.SkipTarget.Questgiver   = 0
 NpcBot.WanderingBots.SkipTarget.Flightmaster = 0
@@ -4993,23 +4991,23 @@ NpcBot.HK.Enable = 1
 
 #
 #    NpcBot.HK.Message.Enable
-#        Description: Show 'HK: <rank>' message for NPCBot honor kills.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
+#        Description: 击杀 NPCBot 获得荣誉击杀时显示“荣誉击杀：<军衔>”的消息。
+#        Default:     0 - (禁用)
+#                     1 - (启用)
 
 NpcBot.HK.Message.Enable = 0
 
 #
 #    NpcBot.HK.Achievements.Enable
-#        Description: Count NPCBot honor kills towards PvP achievements.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
+#        Description: 将击杀 NPCBot 获得的荣誉击杀数计入 PvP 成就。
+#        Default:     0 - (禁用)
+#                     1 - (启用)
 
 NpcBot.HK.Achievements.Enable = 0
 
 #
 #    NpcBot.HK.Rate.Honor
-#        Description: Honor gained multiplier for NPCBot honor kills.
+#        Description: 击杀 NPCBot 获得荣誉值的倍率。
 #        Default:     1.0
 #        Minimum:     0.1
 #        Maximum:    10.0
@@ -5018,10 +5016,10 @@ NpcBot.HK.Rate.Honor = 1.0
 
 #
 #    NpcBot.Premade.Enable
-#        Description: Enable joining BG as premade group while having NPCBots in group.
-#        Note:        Queued premade groups do not trigger BG bots generation.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
+#        Description: 允许在队伍中拥有 NPCBots 的情况下，以“预制组队（固定团）”的形式加入战场。
+#        Note:        以预制组队形式排队进入战场时，不会触发战场机器人的生成逻辑。
+#        Default:     0 - (禁用)
+#                     1 - (启用)
 
 NpcBot.Premade.Enable = 0
 

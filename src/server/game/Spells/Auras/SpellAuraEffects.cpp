@@ -5726,6 +5726,11 @@ void AuraEffect::HandleProcTriggerSpellAuraProc(AuraApplication* aurApp, ProcEve
                     case 20810:
                     {
                         DamageInfo const* dinfo = eventInfo.GetDamageInfo();
+                        if (!dinfo)
+                        {
+                            TC_LOG_DEBUG("server.game", "NpcBot: Vampiric Aura (20810) skipped due to missing DamageInfo for spell {}", triggerSpellId);
+                            return;
+                        }
                         uint32 damage = dinfo->GetDamage();
                         if (!damage)
                             return;

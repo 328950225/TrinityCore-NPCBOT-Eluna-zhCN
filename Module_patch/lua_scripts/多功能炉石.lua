@@ -1270,13 +1270,15 @@ function Stone.SelectGossip(event, player, item, sender, intid, code, menu_id)
 				Stone.AddGossip(player, item, menuid)
 			elseif(mtype==TP)then					--传送
 				local map,mapid,x,y,z,o=v[2],v[3],v[4], v[5], v[6],v[7] or 0
-				local pname=player:GetName()--得到玩家名
+				--local pname=player:GetName()--得到玩家名
 				if(player:Teleport(mapid,x,y,z,o,TELE_TO_GM_MODE))then--传送
-					Nplayer=GetPlayerByName(pname)--根据玩家名得到玩家
-					if(Nplayer)then
-						Nplayer:SendBroadcastMessage("已经到达 "..map)
-						Nplayer:ModifyMoney(-sender)--扣费
-					end
+					--Nplayer=GetPlayerByName(pname)--根据玩家名得到玩家
+					--if(Nplayer)then
+						--Nplayer:SendBroadcastMessage("已经到达 "..map)
+						player:SendBroadcastMessage("已经到达 "..map)
+						--Nplayer:ModifyMoney(-sender)--扣费
+						player:ModifyMoney(-sender)--扣费
+					--end
 				else
 					print(">>Eluna Error: Teleport Stone : Teleport To "..mapid)
 				end

@@ -57,6 +57,11 @@
 #include <unordered_set>
 #include <vector>
 
+//npcbot
+#include "botdatamgr.h"
+#include "botmgr.h"
+//end npcbot
+
 u_map_magic MapMagic        = { {'M','A','P','S'} };
 uint32 MapVersionMagic      = 10;
 u_map_magic MapAreaMagic    = { {'A','R','E','A'} };
@@ -1039,6 +1044,40 @@ template<class T>
 void Map::RemoveFromMap(T *obj, bool remove)
 {
     bool const inWorld = obj->IsInWorld() && obj->GetTypeId() >= TYPEID_UNIT && obj->GetTypeId() <= TYPEID_GAMEOBJECT;
+
+    //npcbot: tempfix for bots out of grid during remove from map
+    if constexpr (std::is_base_of_v<Creature, T>)
+    {
+        if (obj->IsNPCBot())
+        {
+            obj->RemoveFromWorld();
+
+            if (obj->isActiveObject())
+                RemoveFromActive(obj);
+
+            if (!inWorld) // if was in world, RemoveFromWorld() called DestroyForNearbyPlayers()
+                obj->DestroyForNearbyPlayers(); // previous obj->UpdateObjectVisibility(true)
+
+            if (obj->IsInGrid())
+                obj->RemoveFromGrid();
+            else
+            {
+                Player const* owner = obj->ToCreature()->GetBotOwner();
+                BOT_LOG_ERROR("npcbots", "Map::Remove<Bot>FromMap() bot {} id {} is in map id {} \"{}\" instanceId {} but not in grid!\nmaster: {}\nmaster map id {} \"{}\"",
+                    obj->GetName(), obj->GetEntry(), GetId(), GetMapName(), i_InstanceId, owner ? owner->GetGUID().ToString() : std::string{ "Unknown" },
+                    (owner && owner->IsInWorld()) ? owner->GetMap()->GetId() : 0u, (owner && owner->IsInWorld()) ? std::string(owner->GetMap()->GetMapName()) : std::string{"Unknown"});
+            }
+
+            obj->ResetMap();
+
+            if (remove)
+                DeleteFromWorld(obj);
+
+            return;
+        }
+    }
+    //end npcbot
+
     obj->RemoveFromWorld();
 
     if (obj->isActiveObject())
@@ -3683,7 +3722,26 @@ uint32 Map::GetPlayersCountExceptGMs() const
     uint32 count = 0;
     for (MapRefManager::const_iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
         if (!itr->GetSource()->IsGameMaster())
+        //npcbot - count npcbots as group members (event if not in group)
+        {
+            if (itr->GetSource()->HaveBot() && BotMgr::LimitBots(this))
+            {
+                ++count;
+                BotMap const* botmap = itr->GetSource()->GetBotMgr()->GetBotMap();
+                for (BotMap::const_iterator itr = botmap->begin(); itr != botmap->end(); ++itr)
+                {
+                    Creature* cre = itr->second;
+                    if (!cre || !cre->IsInWorld() || cre->FindMap() != this || cre->IsTempBot())
+                        continue;
+                    ++count;
+                }
+                continue;
+            }
+        //end npcbot
             ++count;
+        //npcbot
+        }
+        //end npcbot				
     return count;
 }
 
@@ -3781,6 +3839,10 @@ void Map::AddToActive(WorldObject* obj)
         GridCoord p = Trinity::ComputeGridCoord(respawnLocation->GetPositionX(), respawnLocation->GetPositionY());
         if (getNGrid(p.x_coord, p.y_coord))
             getNGrid(p.x_coord, p.y_coord)->incUnloadActiveLock();
+        //npcbot
+        else if (obj->IsNPCBot())
+            EnsureGridLoadedForActiveObject(Cell(Trinity::ComputeCellCoord(obj->GetPositionX(), obj->GetPositionY())), obj);
+        //end npcbot								 
         else
         {
             GridCoord p2 = Trinity::ComputeGridCoord(obj->GetPositionX(), obj->GetPositionY());
@@ -3801,6 +3863,11 @@ void Map::RemoveFromActive(WorldObject* obj)
             if (Creature* creature = obj->ToCreature(); !creature->IsPet() && creature->GetSpawnId())
             {
                 respawnLocation.emplace();
+                //npcbot: prevent crash from accessing deleted creatureData
+                if (creature->IsNPCBot())
+                    creature->GetHomePosition().GetPosition(respawnLocation->m_positionX, respawnLocation->m_positionY, respawnLocation->m_positionZ);
+                else
+                //end npcbot										 
                 creature->GetRespawnPosition(respawnLocation->m_positionX, respawnLocation->m_positionY, respawnLocation->m_positionZ);
             }
             break;
@@ -3820,6 +3887,10 @@ void Map::RemoveFromActive(WorldObject* obj)
         GridCoord p = Trinity::ComputeGridCoord(respawnLocation->GetPositionX(), respawnLocation->GetPositionY());
         if (getNGrid(p.x_coord, p.y_coord))
             getNGrid(p.x_coord, p.y_coord)->decUnloadActiveLock();
+        //npcbot
+        else if (obj->IsNPCBot())
+            EnsureGridLoaded(Cell(Trinity::ComputeCellCoord(obj->GetPositionX(), obj->GetPositionY())));
+        //end npcbot								 
         else
         {
             GridCoord p2 = Trinity::ComputeGridCoord(obj->GetPositionX(), obj->GetPositionY());
@@ -4529,6 +4600,11 @@ void Map::SaveRespawnTime(SpawnObjectType type, ObjectGuid::LowType spawnId, uin
 
 void Map::SaveRespawnInfoDB(RespawnInfo const& info, CharacterDatabaseTransaction dbTrans)
 {
+    //npcbot: DO NOT save npcbots respawn time
+    if (info.type == SPAWN_TYPE_CREATURE && BotDataMgr::SelectNpcBotData(info.entry))
+        return;
+    //end npcbot
+
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_RESPAWN);
     stmt->setUInt16(0, info.type);
     stmt->setUInt32(1, info.spawnId);

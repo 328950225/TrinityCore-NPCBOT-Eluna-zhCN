@@ -520,9 +520,9 @@ void bot_ai::ResetBotAI(uint8 resetType)
 
     if ((resetType == BOTAI_RESET_DISMISS || resetType == BOTAI_RESET_LOGOUT) && !IsTempBot())
     {
-        if (resetType == BOTAI_RESET_DISMISS)
-            ResetAllMiscValues();
-        EnableAllSpells(resetType == BOTAI_RESET_DISMISS);
+        //if (resetType == BOTAI_RESET_DISMISS)
+          //  ResetAllMiscValues();
+        //EnableAllSpells(resetType == BOTAI_RESET_DISMISS);
         InitRoles();
     }
 
@@ -15354,15 +15354,16 @@ void bot_ai::InitRace()
 
 void bot_ai::InitRoles()
 {
-    if (IsTempBot())
+   if (IsTempBot())
     {
         _roleMask = BOT_ROLE_DPS;
         return;
     }
-    else if (IAmFree())
+     else if (IAmFree())
     {
         //default roles
-        _roleMask = DefaultRolesForClass(_botclass, GetSpec());
+        //_roleMask = DefaultRolesForClass(_botclass, GetSpec());
+       _roleMask = _botData->roles;
         return;
     }
 
@@ -15373,7 +15374,8 @@ void bot_ai::InitSpec()
 {
     uint8 spec;
     if (IAmFree())
-        spec = SelectSpecForClass(_botclass);
+       // spec = SelectSpecForClass(_botclass);
+       spec = _botData->spec;
     else
     {
         spec = _botData->spec;

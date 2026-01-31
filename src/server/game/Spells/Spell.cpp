@@ -2693,10 +2693,10 @@ void Spell::TargetInfo::DoDamageAndTriggers(Spell* spell)
         if (canEffectTrigger)
         {    // Fix crash path: DoDamageAndTriggers -> Trigger Spell (Trauma) -> HandleProc 
              // Cause: Player/Object disappears during logic execution leading to Nullptr Access
-            if (!spell || !spell->m_spellInfo || !caster || !caster->IsInWorld())
+           /*  if (!spell || !spell->m_spellInfo || !caster || !caster->IsInWorld())
             {
                 return;
-            }
+            } */
             Unit::ProcSkillsAndAuras(caster, spell->unitTarget, procAttacker, procVictim, procSpellType, PROC_SPELL_PHASE_HIT, hitMask, spell, spellDamageInfo.get(), healInfo.get());
 
             // item spells (spell hit of non-damage spell may also activate items, for example seal of corruption hidden hit)

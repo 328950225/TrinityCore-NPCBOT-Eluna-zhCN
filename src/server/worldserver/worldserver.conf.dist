@@ -1332,7 +1332,7 @@ BirthdayTime = 1768686173
 #
 #
 
-CacheDataQueries = 0
+CacheDataQueries = 1
 
 #
 #    AllowLoggingIPAddressesInDatabase

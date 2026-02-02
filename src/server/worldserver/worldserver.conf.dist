@@ -3189,7 +3189,7 @@ XP.Boost.Rate = 2.0
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 
-PlayerStart.AllSpells = 1
+PlayerStart.AllSpells = 0
 
 #
 #    PlayerStart.MapsExplored

@@ -26,8 +26,8 @@ Unsummon elemental totems if Elementals are killed
 Aura application bug for bot in other subgroup, maybe caused by creatorGUID mismatch
 */
 
-constexpr uint8 MAX_WOLVES = 2;
-constexpr uint8 MAX_TOTEMS = 4;
+static constexpr uint8 MAX_WOLVES = 2;
+static constexpr uint8 MAX_TOTEMS = 4;
 
 enum ShamanBaseSpells
 {
@@ -474,8 +474,8 @@ public:
                             SpellInfo const* vspellInfo = vspell->GetSpellInfo();
                             static const std::array<uint32, 3> TremorMechanics = { MECHANIC_FEAR, MECHANIC_CHARM, MECHANIC_SLEEP };
                             static const auto is_tremor_effect = [](SpellEffectInfo const& effect) {  return effect.IsAura(SPELL_AURA_MOD_FEAR) || effect.IsAura(SPELL_AURA_MOD_CHARM); };
-                            if (std::find(TremorMechanics.cbegin(), TremorMechanics.cend(), vspellInfo->Mechanic) != TremorMechanics.cend() ||
-                                std::any_of(vspellInfo->_effects.cbegin(), vspellInfo->_effects.cend(), is_tremor_effect))
+                            if (std::ranges::find(TremorMechanics, vspellInfo->Mechanic) != TremorMechanics.cend() ||
+                                std::ranges::any_of(vspellInfo->_effects, is_tremor_effect))
                             {
                                 canTremor = true;
                             }
@@ -2050,7 +2050,7 @@ public:
                     if (baseId == CHAIN_LIGHTNING_1)
                     {
                         //Normalize chance
-                        if (urand(1,100) <= (100.f / spell->_effects[0].ChainTarget))
+                        if (urand(1,100) <= (100.f / spell->_effects[0].ChainTargets))
                             me->CastSpell(target, procId, true);
                     }
                 }
@@ -2295,7 +2295,7 @@ public:
             //{
             //    std::ostringstream msg;
             //    msg << "Summoned " << summon->GetName() << " by basespell: " << createSpell;
-            //    BotWhisper(msg.str().c_str());
+            //    BotWhisper(msg.view());
             //}
             uint32 btype;
             switch (createSpell)
@@ -2759,7 +2759,7 @@ public:
             float _effradius;
         };
 
-        typedef std::pair<ObjectGuid /*guid*/, BotTotemParam /*param*/> BotTotem;
+        using BotTotem = std::pair<ObjectGuid /*guid*/, BotTotemParam /*param*/>;
         BotTotem _totems[MAX_TOTEMS];
         uint32 TotemTimer[MAX_TOTEMS];
         //Wolves
@@ -2778,7 +2778,7 @@ public:
 
         bool canTremor;
 
-        typedef std::unordered_map<uint32 /*baseId*/, int32 /*amount*/> HealMap;
+        using HealMap = std::unordered_map<uint32 /*baseId*/, int32 /*amount*/>;
         HealMap _heals;
 
         uint32 _getTotemsMask(std::map<uint32 /*type*/, uint32 /*curId*/>& idMap) const

@@ -39,7 +39,8 @@ enum class BotWPFlags : uint32
     BOTWP_FLAG_MOVEMENT_FORCE_JUMP_BEGIN    = 0x00010000, // movement between 2 WPs having begin and end flags is forced to be a jump (prevent casting when falling from a cliff)
     BOTWP_FLAG_MOVEMENT_FORCE_JUMP_END      = 0x00020000, // movement between 2 WPs having begin and end flags is forced to be a jump (prevent casting when falling from a cliff)
     BOTWP_FLAG_INTERACTION_MILL_RADIUS      = 0x00040000, // if chosen as a mill point, radius is reduced to INTERACTION_DISTANCE
-    BOTWP_FLAG_END                          = 0x00080000,
+    BOTWP_FLAG_NOT_A_START_POINT            = 0x00080000, // a bot can not teleport to this node, its a waypoint for moving only.
+    BOTWP_FLAG_END                          = 0x00100000,
 
     BOTWP_FLAG_ALLIANCE_OR_HORDE_ONLY       = BOTWP_FLAG_ALLIANCE_ONLY | BOTWP_FLAG_HORDE_ONLY,
     BOTWP_FLAG_ALLIANCE_SPAWN_POINT         = BOTWP_FLAG_SPAWN | BOTWP_FLAG_ALLIANCE_ONLY,
@@ -66,8 +67,8 @@ enum class BotWPLevel : uint32
     BOTWP_LEVEL_ONE                         = 1,
 };
 
-constexpr uint32 WP_SPELL_ID_LINK_TO = 64034;
-constexpr uint32 WP_SPELL_ID_LINK_FROM = 64036;
+inline constexpr uint32 WP_SPELL_ID_LINK_TO = 64034;
+inline constexpr uint32 WP_SPELL_ID_LINK_FROM = 64036;
 
 class WanderNode : public Position
 {
@@ -152,7 +153,7 @@ public:
     static size_t GetMapWPsCount(uint32 mapId);
     static size_t GetWPMapsCount();
 
-    WanderNode(uint32 wpId, uint32 mapId, float x, float y, float z, float o, uint32 zoneId, uint32 areaId, std::string const& name);
+    WanderNode(uint32 wpId, uint32 mapId, float x, float y, float z, float o, uint32 zoneId, uint32 areaId, std::string&& name);
     ~WanderNode();
 
     static void RemoveAllWPs();

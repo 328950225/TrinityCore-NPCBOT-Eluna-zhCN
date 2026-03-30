@@ -159,7 +159,7 @@ public:
                 me->InterruptSpell(CURRENT_AUTOREPEAT_SPELL);
 
                 if (!IAmFree() && me->IsStandState() && !me->isMoving() && !master->isMoving() && !me->IsMounted() &&
-                    !me->IsInCombat() && !master->IsInCombat() && Rand() < 10 && me->GetDistance(master) < 15 &&
+                    !me->IsInCombat() && !master->IsInCombat() && !IsCasting() && Rand() < 10 && me->GetDistance(master) < 15 &&
                     !me->HasStealthAura() && !me->HasInvisibilityAura() && !me->HasAuraType(SPELL_AURA_PERIODIC_DAMAGE) &&
                     _minions.empty())
                 {
@@ -246,7 +246,7 @@ public:
 
             std::list<Unit*> targets;
             GetNearbyTargetsList(targets, 50, 0);
-            targets.remove_if(BOTAI_PRED::AuraedTargetExcludeByCaster(BLACK_ARROW_1, me->GetGUID()));
+            std::erase_if(targets, BOTAI_PRED::AuraedTargetExcludeByCaster(BLACK_ARROW_1, me->GetGUID()));
             if (Unit* target = !targets.empty() ? Bcore::Containers::SelectRandomContainerElement(targets) : nullptr)
             {
                 if (doCast(target, GetSpell(BLACK_ARROW_1)))
@@ -588,7 +588,7 @@ public:
         //}
     private:
         ObjectGuid _blackArrowKillGUID;
-        typedef std::set<Creature*> Summons;
+        using Summons = std::set<Creature*>;
         Summons _minions;
     };
 };

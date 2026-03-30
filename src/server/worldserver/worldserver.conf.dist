@@ -4362,25 +4362,37 @@ NpcBot.SharedOwnership.MaxOwners = 0
 NpcBot.BaseFollowDistance = 35
 
 #
-#    NpcBot.XpReduction.Amount
-#    NpcBot.XpReduction.StartingNumber
-#    NpcBot.XpReduction.Blizzlike.Enable
-#    NpcBot.XpReduction.Blizzlike.GroupOnly
-#        Description: 从第 <StartingNumber> 个机器人开始，每个机器人所产生的经验值 (XP) 惩罚百分比。
-#                     <Blizzlike> 启用基于小队人数的经验缩减（计算所有机器人或仅限小队内的机器人），
-#                     该缩减采用乘法叠加。
-#        Example:     4 人小队，其中 3 个机器人，缩减值为 20，起始个数为 2，且启用了 Blizzlike：
-#                     (100 - ((3-(2-1))*20)) * 1.3 / 4 = 最终获得 19.5% 的经验值。
-#        Note:        总体的最大经验缩减上限为 90%。
-#        Default:     0 - (NpcBot.XpReduction.Amount - 缩减数值)
-#                     2 - (NpcBot.XpReduction.StartingNumber - 起始机器人数量)
-#                     1 - (NpcBot.XpReduction.Blizzlike.Enable - 启用暴雪官方风格缩减)
-#                     0 - (NpcBot.XpReduction.Blizzlike.GroupOnly - 仅限小队)
+#    NpcBot.XpReduction.Enable
+#    NpcBot.XpReduction.GroupOnly
+#    NpcBot.XpReduction.Extra.Amount
+#    NpcBot.XpReduction.Extra.StartingNumber
+#        Description: Enable Blizzlike XP penalty for using bots counting
+#                     either all participating bots or in <GroupOnly>.
+#                     Additional XP reduction <Amount> applies on top of that,
+#                     starting with <StartingNumber>'th bot
+#        Example:     Group of 4, 3 bots, reduction is 20, start is 2:
+#                     (100% - ((3-(2-1))*20)) * 1.3 / 4 = 19.5% exp gained
+#        Note:        Maximum extra xp reduction factor is 90%.
+#        Default:     0 - (NpcBot.XpReduction.Enable)
+#                     0 - (NpcBot.XpReduction.GroupOnly)
+#                     0 - (NpcBot.XpReduction.Extra.Amount)
+#                     2 - (NpcBot.XpReduction.Extra.StartingNumber)
 
-NpcBot.XpReduction.Amount              = 0
-NpcBot.XpReduction.StartingNumber      = 2
-NpcBot.XpReduction.Blizzlike.Enable    = 1
-NpcBot.XpReduction.Blizzlike.GroupOnly = 0
+NpcBot.XpReduction.Enable               = 0
+NpcBot.XpReduction.GroupOnly            = 0
+NpcBot.XpReduction.Extra.Amount         = 0
+NpcBot.XpReduction.Extra.StartingNumber = 2
+
+#
+#    NpcBot.HonorReduction.Enable
+#    NpcBot.HonorReduction.GroupOnly
+#        Description: Enable Blizzlike honor gain reduction when using bots counting
+#                     either all participating bots or in <GroupOnly>.
+#        Default:     0 - (NpcBot.HonorReduction.Enable)
+#                     0 - (NpcBot.HonorReduction.GroupOnly)
+
+NpcBot.HonorReduction.Enable    = 0
+NpcBot.HonorReduction.GroupOnly = 0
 
 #
 #    NpcBot.MoneyShare.Enable

@@ -48,7 +48,7 @@
 #include "WorldSession.h"
 
 //npcbot
-#include "botmgr.h"
+#include "botconfig.h"
 //end npcbot
 
 // Trait which indicates whether this script type

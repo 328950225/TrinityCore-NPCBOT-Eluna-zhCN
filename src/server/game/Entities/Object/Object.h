@@ -355,7 +355,7 @@ protected:
 public:
     virtual ~WorldObject();
 
-        virtual void Update(uint32 /*time_diff*/) { }
+        virtual void Update(uint32 diff);
 
     void AddToWorld() override;
     void RemoveFromWorld() override;
@@ -365,8 +365,8 @@ public:
     void GetClosePoint(float& x, float& y, float& z, float size, float distance2d = 0, float relAngle = 0) const;
     void MovePosition(Position& pos, float dist, float angle);
     Position GetNearPosition(float dist, float angle);
-    void MovePositionToFirstCollision(Position& pos, float dist, float angle) const;
-    Position GetFirstCollisionPosition(float dist, float angle) const;
+    void MovePositionToFirstCollision(Position &pos, float dist, float angle);
+    Position GetFirstCollisionPosition(float dist, float angle);
     Position GetRandomNearPosition(float radius);
     void GetContactPoint(WorldObject const* obj, float& x, float& y, float& z, float distance2d = CONTACT_DISTANCE) const;
 
@@ -651,6 +651,8 @@ protected:
         virtual bool IsInvisibleDueToDespawn() const { return false; }
         //difference from IsAlwaysVisibleFor: 1. after distance check; 2. use owner or charmer as seer
         virtual bool IsAlwaysDetectableFor(WorldObject const* /*seer*/) const { return false; }
+
+        virtual void Heartbeat() { }
     private:
         Map* m_currMap;                                   // current object's Map location
 
@@ -660,6 +662,7 @@ protected:
     uint16 m_notifyflags;
 
         ObjectGuid _privateObjectOwner;
+        Milliseconds _heartbeatTimer;
 
     virtual bool _IsWithinDist(WorldObject const* obj, float dist2compare, bool is3D, bool incOwnRadius = true, bool incTargetRadius = true) const;
 

@@ -1,5 +1,6 @@
 #include "bpet_ai.h"
 #include "bot_GridNotifiers.h"
+#include "botconfig.h"
 #include "botmgr.h"
 #include "Containers.h"
 #include "LFGMgr.h"
@@ -21,18 +22,18 @@ static constexpr uint32 DK_MAX_PET_POSITIONS = 10;
 static constexpr uint32 DARK_RANGER_MAX_PET_POSITIONS = 5;
 static constexpr uint32 NECROMANCER_MAX_PET_POSITIONS = 12;
 static constexpr uint32 CRYPT_LORD_MAX_PET_POSITIONS = 6;
-float constexpr ShamanPetPositionAnglesByPosNumber[SHAMAN_MAX_PET_POSITIONS] =
+static constexpr float ShamanPetPositionAnglesByPosNumber[SHAMAN_MAX_PET_POSITIONS] =
 {
     0.f,//left
     float(M_PI)//right
 };
-float constexpr DruidPetPositionAnglesByPosNumber[DRUID_MAX_PET_POSITIONS] =
+static constexpr float DruidPetPositionAnglesByPosNumber[DRUID_MAX_PET_POSITIONS] =
 {
     0.f,//left
     float(M_PI)/2,//back
     float(M_PI)//right
 };
-float constexpr DKPetPositionAnglesByPosNumber[DK_MAX_PET_POSITIONS] =
+static constexpr float DKPetPositionAnglesByPosNumber[DK_MAX_PET_POSITIONS] =
 {
     0.f,
     float(M_PI),
@@ -45,7 +46,7 @@ float constexpr DKPetPositionAnglesByPosNumber[DK_MAX_PET_POSITIONS] =
     2.4434609f,//7*M_PI/9
     2.7925268f //8*M_PI/9
 };
-float constexpr DarkRangerPetPositionAnglesByPosNumber[DARK_RANGER_MAX_PET_POSITIONS] =
+static constexpr float DarkRangerPetPositionAnglesByPosNumber[DARK_RANGER_MAX_PET_POSITIONS] =
 {
     0.f,
     float(M_PI),
@@ -53,7 +54,7 @@ float constexpr DarkRangerPetPositionAnglesByPosNumber[DARK_RANGER_MAX_PET_POSIT
     1.5707963f,//2*M_PI/4
     2.3561944f //3*M_PI/4
 };
-float constexpr NecromancerPetPositionAnglesByPosNumber[NECROMANCER_MAX_PET_POSITIONS] =
+static constexpr float NecromancerPetPositionAnglesByPosNumber[NECROMANCER_MAX_PET_POSITIONS] =
 {
     0.f,
     float(M_PI),
@@ -68,7 +69,7 @@ float constexpr NecromancerPetPositionAnglesByPosNumber[NECROMANCER_MAX_PET_POSI
     float(9 *M_PI/11),
     float(10*M_PI/11)
 };
-float constexpr CryptLordPetPositionAnglesByPosNumber[CRYPT_LORD_MAX_PET_POSITIONS] =
+static constexpr float CryptLordPetPositionAnglesByPosNumber[CRYPT_LORD_MAX_PET_POSITIONS] =
 {
     0.7853981f,//1*M_PI/4
     2.3561944f,//3*M_PI/4
@@ -1439,8 +1440,8 @@ bool bot_pet_ai::IsInBotParty(Unit const* unit) const
             return true;
         //pointed target case
         for (uint8 i = 0; i != TARGET_ICONS_COUNT; ++i)
-            if (BotMgr::GetHealTargetIconFlags() & GroupIconsFlags[i] &&
-                !((BotMgr::GetOffTankTargetIconFlags() | BotMgr::GetDPSTargetIconFlags()) & GroupIconsFlags[i]))
+            if (BotCfg::GetHealTargetIconFlags() & GroupIconsFlags[i] &&
+                !((BotCfg::GetOffTankTargetIconFlags() | BotCfg::GetDPSTargetIconFlags()) & GroupIconsFlags[i]))
                 if (gr->GetTargetIcons()[i] == unit->GetGUID())
                     return true;
     }
@@ -2351,7 +2352,7 @@ bool bot_pet_ai::GlobalUpdate(uint32 diff)
         return false;
     }
 
-    if (!BotMgr::IsNpcBotModEnabled())
+    if (!BotCfg::IsNpcBotModEnabled())
         return false;
 
     ReduceCD(diff);

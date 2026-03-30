@@ -1637,7 +1637,7 @@ void Spell::SelectImplicitTargetObjectTargets(SpellEffectInfo const& spellEffect
 
 void Spell::SelectImplicitChainTargets(SpellEffectInfo const& spellEffectInfo, SpellImplicitTargetInfo const& targetType, WorldObject* target, uint32 effMask)
 {
-    uint32 maxTargets = spellEffectInfo.ChainTarget;
+    uint32 maxTargets = spellEffectInfo.ChainTargets;
     if (Player* modOwner = m_caster->GetSpellModOwner())
         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_JUMP_TARGETS, maxTargets, this);
 
@@ -5337,7 +5337,7 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGoT
     destTarget = &m_destTargets[spellEffectInfo.EffectIndex]._position;
     effectInfo = &spellEffectInfo;
 
-    // we do not need DamageMultiplier here.
+    // we do not need ChainAmplitude here.
     damage = CalculateDamage(spellEffectInfo);
 
     bool preventDefault = CallScriptEffectHandlers(spellEffectInfo.EffectIndex, mode);
@@ -5474,7 +5474,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
         {
             if (m_spellInfo->CasterAuraState && !unitCaster->HasAuraState(AuraStateType(m_spellInfo->CasterAuraState), m_spellInfo, unitCaster))
                 return SPELL_FAILED_CASTER_AURASTATE;
-            if (m_spellInfo->CasterAuraStateNot && unitCaster->HasAuraState(AuraStateType(m_spellInfo->CasterAuraStateNot), m_spellInfo, unitCaster))
+            if (m_spellInfo->ExcludeCasterAuraState && unitCaster->HasAuraState(AuraStateType(m_spellInfo->ExcludeCasterAuraState), m_spellInfo, unitCaster))
                 return SPELL_FAILED_CASTER_AURASTATE;
 
             // Note: spell 62473 requres casterAuraSpell = triggering spell
@@ -6295,7 +6295,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
                 InstanceTemplate const* it = sObjectMgr->GetInstanceTemplate(unitCaster->GetMapId());
                 if (it)
                     allowMount = it->AllowMount;
-                if (unitCaster->GetTypeId() == TYPEID_PLAYER && !allowMount && !m_spellInfo->AreaGroupId)
+                if (unitCaster->GetTypeId() == TYPEID_PLAYER && !allowMount && !m_spellInfo->RequiredAreasID)
                     return SPELL_FAILED_NO_MOUNTS_ALLOWED;
 
                 if (unitCaster->IsInDisallowedMountForm())
@@ -8280,6 +8280,10 @@ void Spell::CallScriptBeforeCastHandlers()
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+        e->OnBeforeCast(this);
+#endif
 }
 
 void Spell::CallScriptOnCastHandlers()
@@ -8306,6 +8310,10 @@ void Spell::CallScriptAfterCastHandlers()
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+        e->OnAfterCast(this);
+#endif
 }
 
 SpellCastResult Spell::CallScriptCheckCastHandlers()
@@ -8324,6 +8332,10 @@ SpellCastResult Spell::CallScriptCheckCastHandlers()
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+        retVal = SpellCastResult(e->OnCheckCast(this));
+#endif
     return retVal;
 }
 
@@ -8374,6 +8386,28 @@ bool Spell::CallScriptEffectHandlers(SpellEffIndex effIndex, SpellEffectHandleMo
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+    {
+        switch (mode)
+        {
+        case SPELL_EFFECT_HANDLE_LAUNCH:
+            preventDefault = e->OnEffectLaunch(this, effIndex, mode, preventDefault);
+            break;
+        case SPELL_EFFECT_HANDLE_LAUNCH_TARGET:
+            preventDefault = e->OnEffectLaunchTarget(this, effIndex, mode, preventDefault);
+            break;
+        case SPELL_EFFECT_HANDLE_HIT:
+            preventDefault = e->OnEffectHit(this, effIndex, mode, preventDefault);
+            break;
+        case SPELL_EFFECT_HANDLE_HIT_TARGET:
+            preventDefault = e->OnEffectHitTarget(this, effIndex, mode, preventDefault);
+            break;
+        default:
+            break;
+        }
+    }
+#endif
     return preventDefault;
 }
 
@@ -8402,6 +8436,10 @@ void Spell::CallScriptBeforeHitHandlers(SpellMissInfo missInfo)
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if(Eluna* e = GetCaster()->GetEluna())
+        e->OnBeforeSpellHit(this, missInfo);
+#endif
 }
 
 void Spell::CallScriptOnHitHandlers()
@@ -8415,6 +8453,10 @@ void Spell::CallScriptOnHitHandlers()
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+        if (Eluna* e = GetCaster()->GetEluna())
+            e->OnSpellHit(this);
+#endif
 }
 
 void Spell::CallScriptAfterHitHandlers()
@@ -8428,6 +8470,10 @@ void Spell::CallScriptAfterHitHandlers()
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+        e->OnAfterSpellHit(this);
+#endif
 }
 
 void Spell::CallScriptObjectAreaTargetSelectHandlers(std::list<WorldObject*>& targets, SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType)
@@ -8442,6 +8488,10 @@ void Spell::CallScriptObjectAreaTargetSelectHandlers(std::list<WorldObject*>& ta
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+        e->OnObjectAreaTargetSelect(this, effIndex, targets);
+#endif
 }
 
 void Spell::CallScriptObjectTargetSelectHandlers(WorldObject*& target, SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType)
@@ -8456,6 +8506,10 @@ void Spell::CallScriptObjectTargetSelectHandlers(WorldObject*& target, SpellEffI
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+        e->OnObjectTargetSelect(this, effIndex, target);
+#endif
 }
 
 void Spell::CallScriptDestinationTargetSelectHandlers(SpellDestination& target, SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType)
@@ -8470,6 +8524,10 @@ void Spell::CallScriptDestinationTargetSelectHandlers(SpellDestination& target, 
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+        if (Eluna* e = GetCaster()->GetEluna())
+            e->OnDestinationTargetSelect(this, effIndex, target);
+#endif
 }
 
 bool Spell::CheckScriptEffectImplicitTargets(uint32 effIndex, uint32 effIndexToCheck)
@@ -8648,6 +8706,10 @@ void Spell::CallScriptOnResistAbsorbCalculateHandlers(DamageInfo const& damageIn
 
         (*scritr)->_FinishScriptCall();
     }
+#ifdef ELUNA
+    if (Eluna* e = GetCaster()->GetEluna())
+        e->OnEffectCalcAbsorb(this, damageInfo, resistAmount, absorbAmount);
+#endif
 }
 
 namespace Trinity

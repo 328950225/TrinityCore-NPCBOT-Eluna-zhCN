@@ -58,11 +58,7 @@ namespace LuaUnit
         int32 immunity = E->CHECKVAL<int32>(2);
         bool apply = E->CHECKVAL<bool>(3, true);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         unit->ApplySpellImmune(0, 5, immunity, apply);
-#else
-        unit->ApplySpellImmune(0, IMMUNITY_MECHANIC, immunity, apply);
-#endif
         return 0;
     }
     /**
@@ -121,11 +117,7 @@ namespace LuaUnit
      */
     int IsRooted(Eluna* E, Unit* unit)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(unit->IsRooted() || unit->HasUnitMovementFlag(MOVEMENTFLAG_ROOT));
-#else
-        E->Push(unit->HasRootAura() || unit->HasUnitMovementFlag(MOVEMENTFLAG_ROOT));
-#endif
         return 1;
     }
 
@@ -239,11 +231,7 @@ namespace LuaUnit
      */
     int IsSpiritGuide(Eluna* E, Unit* unit)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(unit->IsSpiritGuide());
-#else
-        E->Push(unit->IsAreaSpiritHealer());
-#endif
         return 1;
     }
 
@@ -681,11 +669,7 @@ namespace LuaUnit
         if (spellschool >= MAX_SPELL_SCHOOL)
             return 1;
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(unit->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + spellschool));
-#else
-        E->Push(unit->GetOwner()->ToPlayer()->m_activePlayerData->ModDamageDonePos[spellschool]); //Not sure if this is correct
-#endif
         return 1;
     }
 
@@ -1031,11 +1015,7 @@ namespace LuaUnit
         if (!entry)
             return 1;
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(entry->Name[locale]);
-#else
-        E->Push(entry->Name.Str[locale]);
-#endif
         return 1;
     }
 
@@ -1067,11 +1047,7 @@ namespace LuaUnit
         if (!entry)
             return 1;
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(entry->Name[locale]);
-#else
-        E->Push(entry->Name.Str[locale]);
-#endif
         return 1;
     }
 
@@ -1087,16 +1063,44 @@ namespace LuaUnit
     }
 
     /**
-     * Returns the [Aura] of the given spell entry on the [Unit] or nil.
+     * Returns the [Aura] of the given spell on the [Unit], or nil if not found.
+     * Optionally filters by caster, item caster, and required effect mask.
      *
-     * @param uint32 spellID : entry of the aura spell
-     * @return [Aura] aura : aura object or nil
+     * @param uint32 spellId : the spell ID to look up
+     * @param ObjectGuid caster = ObjectGuid::Empty : the GUID of the caster to filter by, or empty for any caster
+     * @param ObjectGuid itemCaster = ObjectGuid::Empty : the GUID of the item caster to filter by, or empty for any
+     * @param uint8 reqEffMask = 0 : bitmask of effects that must be present, or 0 for any
+     * @return [Aura] aura : the aura object or nil
      */
     int GetAura(Eluna* E, Unit* unit)
     {
-        uint32 spellID = E->CHECKVAL<uint32>(2);
+        uint32 spellId = E->CHECKVAL<uint32>(2);
+        ObjectGuid caster = E->CHECKVAL<ObjectGuid>(3, ObjectGuid::Empty);
+        ObjectGuid itemCaster = E->CHECKVAL<ObjectGuid>(4, ObjectGuid::Empty);
+        uint8 reqEffMask = E->CHECKVAL<uint8>(5, 0);
+        E->Push(unit->GetAura(spellId, caster, itemCaster, reqEffMask));
+        return 1;
+    }
 
-        E->Push(unit->GetAura(spellID));
+    /**
+     * Returns the owned [Aura] of the given spell on the [Unit], or nil if not found.
+     * Similar to GetAura but searches owned auras and optionally excludes a specific [Aura].
+     *
+     * @param uint32 spellId : the spell ID to look up
+     * @param ObjectGuid caster = ObjectGuid::Empty : the GUID of the caster to filter by, or empty for any caster
+     * @param ObjectGuid itemCaster = ObjectGuid::Empty : the GUID of the item caster to filter by, or empty for any
+     * @param uint8 reqEffMask = 0 : bitmask of effects that must be present, or 0 for any
+     * @param [Aura] exceptAura = nil : an [Aura] to exclude from the search, or nil for none
+     * @return [Aura] aura : the aura object or nil
+     */
+    int GetOwnedAura(Eluna* E, Unit* unit)
+    {
+        uint32 spellId = E->CHECKVAL<uint32>(2);
+        ObjectGuid caster = E->CHECKVAL<ObjectGuid>(3, ObjectGuid::Empty);
+        ObjectGuid itemCaster = E->CHECKVAL<ObjectGuid>(4, ObjectGuid::Empty);
+        uint8 reqEffMask = E->CHECKVAL<uint8>(5, 0);
+        Aura* exceptAura = E->CHECKOBJ<Aura>(6, false);
+        E->Push(unit->GetOwnedAura(spellId, caster, itemCaster, reqEffMask, exceptAura));
         return 1;
     }
 
@@ -1381,11 +1385,7 @@ namespace LuaUnit
         {
             player->GiveLevel(newlevel);
             player->InitTalentForLevel();
-#if ELUNA_EXPANSION < EXP_RETAIL
             player->SetUInt32Value(PLAYER_XP, 0);
-#else
-            player->SetXP(0);
-#endif
         }
         else
             unit->SetLevel(newlevel);
@@ -1544,7 +1544,6 @@ namespace LuaUnit
         return 0;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
     /**
      * Sets the [Unit]'s native/default modelID.
      *
@@ -1556,7 +1555,6 @@ namespace LuaUnit
         unit->SetNativeDisplayId(model);
         return 0;
     }
-#endif
 
     /**
      * Sets the [Unit]'s facing/orientation.
@@ -1657,27 +1655,15 @@ namespace LuaUnit
 
         if (apply)
         {
-#if ELUNA_EXPANSION < EXP_RETAIL
             unit->SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
             for (Unit::ControlList::iterator itr = unit->m_Controlled.begin(); itr != unit->m_Controlled.end(); ++itr)
                 (*itr)->SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
-#else
-            unit->SetPvpFlag(UNIT_BYTE2_FLAG_FFA_PVP);
-            for (Unit::ControlList::iterator itr = unit->m_Controlled.begin(); itr != unit->m_Controlled.end(); ++itr)
-                (*itr)->SetPvpFlag(UNIT_BYTE2_FLAG_FFA_PVP);
-#endif
         }
         else
         {
-#if ELUNA_EXPANSION < EXP_RETAIL
             unit->RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
             for (Unit::ControlList::iterator itr = unit->m_Controlled.begin(); itr != unit->m_Controlled.end(); ++itr)
                 (*itr)->RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
-#else
-            unit->RemovePvpFlag(UNIT_BYTE2_FLAG_FFA_PVP);
-            for (Unit::ControlList::iterator itr = unit->m_Controlled.begin(); itr != unit->m_Controlled.end(); ++itr)
-                (*itr)->RemovePvpFlag(UNIT_BYTE2_FLAG_FFA_PVP);
-#endif
         }
 
         return 0;
@@ -1694,20 +1680,12 @@ namespace LuaUnit
 
         if (apply)
         {
-#if ELUNA_EXPANSION < EXP_RETAIL
             unit->SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
-#else
-            unit->SetPvpFlag(UNIT_BYTE2_FLAG_SANCTUARY);
-#endif
             unit->CombatStop();
             unit->CombatStopWithPets();
         }
         else
-#if ELUNA_EXPANSION < EXP_RETAIL
             unit->RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
-#else
-            unit->RemovePvpFlag(UNIT_BYTE2_FLAG_SANCTUARY);
-#endif
 
         return 0;
     }
@@ -1849,11 +1827,7 @@ namespace LuaUnit
     {
         uint32 emoteId = E->CHECKVAL<uint32>(2);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         unit->SetUInt32Value(UNIT_NPC_EMOTESTATE, emoteId);
-#else
-        unit->SetEmoteState(Emote(emoteId));
-#endif
         return 0;
     }
 
@@ -1896,24 +1870,13 @@ namespace LuaUnit
 
         if (type >= MAX_CHAT_MSG_TYPE)
             return luaL_argerror(E->L, 2, "valid ChatMsg expected");
-#if ELUNA_EXPANSION < EXP_RETAIL
         if (lang >= LANGUAGES_COUNT)
-#else
-        if (lang > LANG_MAX_LANGUAGE)
-#endif
             return luaL_argerror(E->L, 3, "valid Language expected");
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         WorldPacket data;
         ChatHandler::BuildChatPacket(data, ChatMsg(type), Language(lang), unit, target, msg);
 
         target->GetSession()->SendPacket(&data);
-#else
-        WorldPackets::Chat::Chat packet;
-        packet.Initialize(ChatMsg(type), Language(lang), unit, target, msg);
-
-        target->GetSession()->SendPacket(packet.Write());
-#endif
         return 0;
     }
 
@@ -2031,11 +1994,7 @@ namespace LuaUnit
     {
         Unit* target = E->CHECKOBJ<Unit>(2);
         uint32 time = E->CHECKVAL<uint32>(3, 0);
-#if ELUNA_EXPANSION < EXP_RETAIL
         unit->GetMotionMaster()->MoveFleeing(target, time);
-#else
-        unit->GetMotionMaster()->MoveFleeing(target, Milliseconds(time));
-#endif
         return 0;
     }
 
@@ -2081,11 +2040,7 @@ namespace LuaUnit
 
         Position pos(x, y, z);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         unit->GetMotionMaster()->MoveJump(pos, zSpeed, maxHeight, id);
-#else
-        unit->GetMotionMaster()->MoveJump(id, pos, zSpeed, {}, maxHeight);
-#endif
         return 0;
     }
 
@@ -2186,11 +2141,7 @@ namespace LuaUnit
         uint32 spell = E->CHECKVAL<uint32>(3);
         bool triggered = E->CHECKVAL<bool>(4, false);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spell);
-#else
-        SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spell, DIFFICULTY_NONE);
-#endif
         if (!spellEntry)
             return 0;
 
@@ -2335,11 +2286,7 @@ namespace LuaUnit
         uint32 spell = E->CHECKVAL<uint32>(2);
         Unit* target = E->CHECKOBJ<Unit>(3);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spell);
-#else
-        SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spell, DIFFICULTY_NONE);
-#endif
         if (!spellEntry)
             return 1;
 
@@ -2458,11 +2405,7 @@ namespace LuaUnit
         if (school == MAX_SPELL_SCHOOL)
         {
             Unit::DealDamage(unit, target, damage, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, durabilityloss);
-#if ELUNA_EXPANSION < EXP_RETAIL
             unit->SendAttackStateUpdate(HITINFO_AFFECTS_VICTIM, target, 1, SPELL_SCHOOL_MASK_NORMAL, damage, 0, 0, VICTIMSTATE_HIT, 0);
-#else
-            unit->SendAttackStateUpdate(HITINFO_AFFECTS_VICTIM, target, 1, SPELL_SCHOOL_MASK_NORMAL, damage, 0, 0, VICTIMSTATE_HIT, 0, 0);
-#endif
             return 0;
         }
 
@@ -2484,39 +2427,22 @@ namespace LuaUnit
 
             uint32 absorb = dmgInfo.GetAbsorb();
             uint32 resist = dmgInfo.GetResist();
-#if ELUNA_EXPANSION < EXP_RETAIL
             unit->DealDamageMods(target, damage, &absorb);
-#else
-            unit->DealDamageMods(unit, target, damage, &absorb);
-#endif
 
             Unit::DealDamage(unit, target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false);
-#if ELUNA_EXPANSION < EXP_RETAIL
             unit->SendAttackStateUpdate(HITINFO_AFFECTS_VICTIM, target, 0, schoolmask, damage, absorb, resist, VICTIMSTATE_HIT, 0);
-#else
-            unit->SendAttackStateUpdate(HITINFO_AFFECTS_VICTIM, target, 0, schoolmask, damage, absorb, resist, VICTIMSTATE_HIT, 0, 0);
-#endif
             return 0;
         }
 
         if (!spell)
             return 0;
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell);
-#else
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell, DIFFICULTY_NONE);
-#endif
         if (!spellInfo)
             return 0;
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         SpellNonMeleeDamage dmgInfo(unit, target, spell, spellInfo->GetSchoolMask());
         Unit::DealDamageMods(dmgInfo.target, dmgInfo.damage, &dmgInfo.absorb);
-#else
-        SpellNonMeleeDamage dmgInfo(unit, target, spellInfo, { (spellInfo)->GetSpellXSpellVisualId(unit, 0) }, spellInfo->GetSchoolMask());
-        unit->DealDamageMods(dmgInfo.attacker, dmgInfo.target, dmgInfo.damage, &dmgInfo.absorb);
-#endif
 
         unit->SendSpellNonMeleeDamageLog(&dmgInfo);
         unit->DealSpellDamage(&dmgInfo, true);
@@ -2538,11 +2464,7 @@ namespace LuaUnit
         uint32 amount = E->CHECKVAL<uint32>(4);
         bool critical = E->CHECKVAL<bool>(5, false);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         if (const SpellInfo* info = sSpellMgr->GetSpellInfo(spell))
-#else
-        if (const SpellInfo* info = sSpellMgr->GetSpellInfo(spell, DIFFICULTY_NONE))
-#endif
         {
             HealInfo healInfo(unit, target, amount, info, info->GetSchoolMask());
             unit->HealBySpell(healInfo, critical);
@@ -2697,6 +2619,7 @@ namespace LuaUnit
         { "GetRaceAsString", &LuaUnit::GetRaceAsString },
         { "GetClassAsString", &LuaUnit::GetClassAsString },
         { "GetAura", &LuaUnit::GetAura },
+        { "GetOwnedAura", &LuaUnit::GetOwnedAura },
         { "GetFaction", &LuaUnit::GetFaction },
         { "GetCurrentSpell", &LuaUnit::GetCurrentSpell },
         { "GetCreatureType", &LuaUnit::GetCreatureType },
@@ -2731,6 +2654,7 @@ namespace LuaUnit
         { "SetMaxPower", &LuaUnit::SetMaxPower },
         { "SetPowerType", &LuaUnit::SetPowerType },
         { "SetDisplayId", &LuaUnit::SetDisplayId },
+        { "SetNativeDisplayId", &LuaUnit::SetNativeDisplayId },
         { "SetFacing", &LuaUnit::SetFacing },
         { "SetFacingToObject", &LuaUnit::SetFacingToObject },
         { "SetSpeed", &LuaUnit::SetSpeed },
@@ -2739,11 +2663,6 @@ namespace LuaUnit
         { "SetConfused", &LuaUnit::SetConfused },
         { "SetFeared", &LuaUnit::SetFeared },
         { "SetPvP", &LuaUnit::SetPvP },
-#if ELUNA_EXPANSION < EXP_RETAIL
-        { "SetNativeDisplayId", &LuaUnit::SetNativeDisplayId },
-#else
-        { "SetNativeDisplayId", METHOD_REG_NONE },
-#endif
         { "SetFFA", &LuaUnit::SetFFA },
         { "SetSanctuary", &LuaUnit::SetSanctuary },
         { "SetCanFly", &LuaUnit::SetCanFly },

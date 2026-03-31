@@ -13,7 +13,6 @@
 #define EXP_TBC 1
 #define EXP_WOTLK 2
 #define EXP_CATA 3
-#define EXP_RETAIL 9
 
 #if !defined ELUNA_CMANGOS
 #include "SharedDefines.h"
@@ -35,14 +34,17 @@
 #include <unordered_set>
 #include <mutex>
 #include <memory>
-#include <sstream>
 
-#if defined ELUNA_TRINITY || ELUNA_CMANGOS 
+#if defined ELUNA_TRINITY || ELUNA_CMANGOS || ELUNA_AZEROTHCORE
 #define USING_BOOST
 #endif
 
 #if defined TRINITY_PLATFORM && defined TRINITY_PLATFORM_WINDOWS
 #if TRINITY_PLATFORM == TRINITY_PLATFORM_WINDOWS
+#define ELUNA_WINDOWS
+#endif
+#elif defined AC_PLATFORM && defined AC_PLATFORM_WINDOWS
+#if AC_PLATFORM == AC_PLATFORM_WINDOWS
 #define ELUNA_WINDOWS
 #endif
 #elif defined PLATFORM && defined PLATFORM_WINDOWS
@@ -53,29 +55,22 @@
 #error Eluna could not determine platform
 #endif
 
-#if defined ELUNA_TRINITY 
+#if defined ELUNA_TRINITY || ELUNA_AZEROTHCORE
 typedef QueryResult ElunaQuery;
 #define GET_GUID                GetGUID
 #define HIGHGUID_PLAYER         HighGuid::Player
+#define HIGHGUID_UNIT           HighGuid::Unit
 #define HIGHGUID_ITEM           HighGuid::Item
 #define HIGHGUID_GAMEOBJECT     HighGuid::GameObject
 #define HIGHGUID_PET            HighGuid::Pet
 #define HIGHGUID_TRANSPORT      HighGuid::Transport
 #define HIGHGUID_VEHICLE        HighGuid::Vehicle
+#define HIGHGUID_CONTAINER      HighGuid::Container
 #define HIGHGUID_DYNAMICOBJECT  HighGuid::DynamicObject
 #define HIGHGUID_CORPSE         HighGuid::Corpse
-#define HIGHGUID_INSTANCE       HighGuid::Instance
-#if ELUNA_EXPANSION < EXP_RETAIL
-#define HIGHGUID_UNIT           HighGuid::Unit
-#define HIGHGUID_CONTAINER      HighGuid::Container
 #define HIGHGUID_MO_TRANSPORT   HighGuid::Mo_Transport
+#define HIGHGUID_INSTANCE       HighGuid::Instance
 #define HIGHGUID_GROUP          HighGuid::Group
-#else
-#define HIGHGUID_UNIT           HighGuid::Creature
-//#define HIGHGUID_CONTAINER      HighGuid::Container
-#define HIGHGUID_MO_TRANSPORT   HighGuid::Transport
-//#define HIGHGUID_GROUP          HighGuid::Group
-#endif
 #endif
 
 #if defined ELUNA_TRINITY
@@ -90,6 +85,18 @@ typedef QueryResult ElunaQuery;
 #define ELUNA_LOG_INFO(...)     ELUNA_LOG_TC_FMT(TC_LOG_INFO, __VA_ARGS__);
 #define ELUNA_LOG_ERROR(...)    ELUNA_LOG_TC_FMT(TC_LOG_ERROR, __VA_ARGS__);
 #define ELUNA_LOG_DEBUG(...)    ELUNA_LOG_TC_FMT(TC_LOG_DEBUG, __VA_ARGS__);
+#elif defined ELUNA_AZEROTHCORE
+#include "fmt/printf.h"
+#define ELUNA_LOG_AC_FMT(AC_LOG_MACRO, ...) \
+    try { \
+        std::string message = fmt::sprintf(__VA_ARGS__); \
+        AC_LOG_MACRO("eluna", "{}", message); \
+    } catch (const std::exception& e) { \
+        AC_LOG_MACRO("eluna", "Failed to format log message: {}", e.what()); \
+    }
+#define ELUNA_LOG_INFO(...)     ELUNA_LOG_AC_FMT(LOG_INFO, __VA_ARGS__);
+#define ELUNA_LOG_ERROR(...)    ELUNA_LOG_AC_FMT(LOG_ERROR, __VA_ARGS__);
+#define ELUNA_LOG_DEBUG(...)    ELUNA_LOG_AC_FMT(LOG_DEBUG, __VA_ARGS__);
 #elif defined ELUNA_VMANGOS
 typedef std::shared_ptr<QueryNamedResult> ElunaQuery;
 #define ASSERT                  MANGOS_ASSERT
@@ -188,7 +195,6 @@ namespace ElunaUtil
      * The returned result buffer must be `delete[]`ed by the caller.
      */
     unsigned char* DecodeData(const char* data, size_t *output_length);
-
 };
 
 #endif

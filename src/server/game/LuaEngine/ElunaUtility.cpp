@@ -19,9 +19,10 @@
 #include "Server/DBCStores.h"
 #include "Util/Timer.h"
 #endif
+
 uint32 ElunaUtil::GetCurrTime()
 {
-#if defined ELUNA_TRINITY || defined ELUNA_MANGOS  
+#if defined ELUNA_TRINITY || defined ELUNA_MANGOS  || defined ELUNA_AZEROTHCORE
     return getMSTime();
 #else
     return WorldTimer::getMSTime();
@@ -30,7 +31,7 @@ uint32 ElunaUtil::GetCurrTime()
 
 uint32 ElunaUtil::GetTimeDiff(uint32 oldMSTime)
 {
-#if defined ELUNA_TRINITY || defined ELUNA_MANGOS  
+#if defined ELUNA_TRINITY || defined ELUNA_MANGOS  || defined ELUNA_AZEROTHCORE
     return GetMSTimeDiffToNow(oldMSTime);
 #else
     return WorldTimer::getMSTimeDiff(oldMSTime, WorldTimer::getMSTime());
@@ -79,7 +80,7 @@ bool ElunaUtil::WorldObjectInRangeCheck::operator()(WorldObject* u)
     if (i_typeMask && !u->isType(TypeMask(i_typeMask)))
 #else
     if (i_typeMask && !u->IsType(TypeMask(i_typeMask)))
-#endif	  
+#endif
         return false;
     if (i_entry && u->GetEntry() != i_entry)
         return false;
@@ -103,10 +104,8 @@ bool ElunaUtil::WorldObjectInRangeCheck::operator()(WorldObject* u)
                 {
 #if !defined ELUNA_MANGOS
                     if ((i_obj_fact->IsHostileTo(*target->GetFactionTemplateEntry())) != (i_hostile == 1))
-#elif ELUNA_EXPANSION < EXP_RETAIL
-                    if ((i_obj_fact->IsHostileTo(*target->getFactionTemplateEntry())) != (i_hostile == 1))
 #else
-                    if ((i_obj_fact->IsHostileTo(target->GetFactionTemplateEntry())) != (i_hostile == 1))
+                    if ((i_obj_fact->IsHostileTo(*target->getFactionTemplateEntry())) != (i_hostile == 1))
 #endif
                         return false;
                 }

@@ -192,11 +192,7 @@ namespace LuaItem
      */
     int IsWeaponVellum(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->IsWeaponVellum());
-#else
-        E->Push(item->IsVellum());
-#endif
         return 1;
     }
 
@@ -207,11 +203,7 @@ namespace LuaItem
      */
     int IsArmorVellum(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->IsArmorVellum());
-#else
-        E->Push(item->IsVellum());
-#endif
         return 1;
     }
 
@@ -263,7 +255,6 @@ namespace LuaItem
 
         const ItemTemplate* temp = item->GetTemplate();
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         std::string name = temp->Name1;
         if (ItemLocale const* il = eObjectMgr->GetItemLocale(temp->ItemId))
             ObjectMgr::GetLocaleString(il->Name, static_cast<LocaleConstant>(locale), name);
@@ -289,26 +280,16 @@ namespace LuaItem
                 name += (*suffix)[(name != temp->Name1) ? locale : uint8(DEFAULT_LOCALE)];
             }
         }
-#else
-        std::string name = temp->GetName(LocaleConstant(locale));
-#endif
 
         std::ostringstream oss;
-#if ELUNA_EXPANSION < EXP_RETAIL
         oss << "|c" << std::hex << ItemQualityColors[temp->Quality] << std::dec <<
             "|Hitem:" << temp->ItemId << ":" <<
-#else
-        oss << "|c" << std::hex << ItemQualityColors[temp->GetQuality()] << std::dec <<
-            "|Hitem:" << temp->GetId() << ":" <<
-#endif
             item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT) << ":" <<
             item->GetEnchantmentId(SOCK_ENCHANTMENT_SLOT) << ":" <<
             item->GetEnchantmentId(SOCK_ENCHANTMENT_SLOT_2) << ":" <<
             item->GetEnchantmentId(SOCK_ENCHANTMENT_SLOT_3) << ":" <<
             item->GetEnchantmentId(BONUS_ENCHANTMENT_SLOT) << ":" <<
-#if ELUNA_EXPANSION < EXP_RETAIL
             item->GetItemRandomPropertyId() << ":" << item->GetItemSuffixFactor() << ":" <<
-#endif
             (uint32)item->GetOwner()->GetLevel() << "|h[" << name << "]|h|r";
 
         E->Push(oss.str());
@@ -398,7 +379,6 @@ namespace LuaItem
         return 1;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
     /**
      * Returns the spell ID tied to the [Item] by spell index
      *
@@ -430,7 +410,6 @@ namespace LuaItem
         E->Push(item->GetTemplate()->Spells[index].SpellTrigger);
         return 1;
     }
-#endif
 
     /**
      * Returns class of the [Item]
@@ -439,11 +418,7 @@ namespace LuaItem
      */
     int GetClass(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetClass());
-#else
         E->Push(item->GetTemplate()->Class);
-#endif
         return 1;
     }
 
@@ -454,11 +429,7 @@ namespace LuaItem
      */
     int GetSubClass(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetSubClass());
-#else
         E->Push(item->GetTemplate()->SubClass);
-#endif
         return 1;
     }
 
@@ -469,11 +440,7 @@ namespace LuaItem
     */
     int GetItemId(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetTemplate()->ItemId);
-#else
-        E->Push(item->GetTemplate()->BasicData->ID);
-#endif
         return 1;
     }
 
@@ -484,11 +451,7 @@ namespace LuaItem
      */
     int GetName(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetDefaultLocaleName());
-#else
         E->Push(item->GetTemplate()->Name1);
-#endif
         return 1;
     }
 
@@ -499,12 +462,7 @@ namespace LuaItem
      */
     int GetDisplayId(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetTemplate()->DisplayInfoID);
-#else
-        auto player = item->GetOwner();
-        E->Push(item->GetDisplayId(player));
-#endif
         return 1;
     }
 
@@ -515,11 +473,7 @@ namespace LuaItem
      */
     int GetQuality(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetQuality());
-#else
         E->Push(item->GetTemplate()->Quality);
-#endif
         return 1;
     }
 
@@ -530,11 +484,7 @@ namespace LuaItem
     */
     int GetFlags(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetTemplate()->Flags);
-#else
-        E->Push(item->GetTemplate()->ExtendedData->Flags[0]);
-#endif
         return 1;
     }
 
@@ -545,11 +495,7 @@ namespace LuaItem
     */
     int GetFlags2(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetTemplate()->Flags2);
-#else
-        E->Push(item->GetTemplate()->ExtendedData->Flags[1]);
-#endif
         return 1;
     }
 
@@ -571,11 +517,7 @@ namespace LuaItem
      */
     int GetBuyCount(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetBuyCount());
-#else
         E->Push(item->GetTemplate()->BuyCount);
-#endif
         return 1;
     }
 
@@ -586,11 +528,7 @@ namespace LuaItem
      */
     int GetBuyPrice(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetBuyPrice());
-#else
         E->Push(item->GetTemplate()->BuyPrice);
-#endif
         return 1;
     }
 
@@ -601,11 +539,7 @@ namespace LuaItem
      */
     int GetSellPrice(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetSellPrice());
-#else
         E->Push(item->GetTemplate()->SellPrice);
-#endif
         return 1;
     }
 
@@ -616,11 +550,7 @@ namespace LuaItem
      */
     int GetInventoryType(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetInventoryType());
-#else
         E->Push(item->GetTemplate()->InventoryType);
-#endif
         return 1;
     }
 
@@ -631,11 +561,7 @@ namespace LuaItem
      */
     int GetAllowableClass(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetAllowableClass());
-#else
         E->Push(item->GetTemplate()->AllowableClass);
-#endif
         return 1;
     }
 
@@ -646,11 +572,7 @@ namespace LuaItem
      */
     int GetAllowableRace(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetTemplate()->AllowableRace);
-#else
-        E->Push(item->GetTemplate()->GetAllowableRace().RawValue);
-#endif
         return 1;
     }
 
@@ -661,11 +583,7 @@ namespace LuaItem
      */
     int GetItemLevel(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetBaseItemLevel());
-#else
         E->Push(item->GetTemplate()->ItemLevel);
-#endif
         return 1;
     }
 
@@ -676,17 +594,10 @@ namespace LuaItem
      */
     int GetRequiredLevel(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION == EXP_CATA
-        E->Push(item->GetTemplate()->GetRequiredLevel());
-#elif ELUNA_EXPANSION == EXP_RETAIL
-        E->Push(item->GetTemplate()->GetBaseRequiredLevel());
-#else
         E->Push(item->GetTemplate()->RequiredLevel);
-#endif
         return 1;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
     /**
      * Returns the amount of stat values on this [Item]
      *
@@ -697,7 +608,6 @@ namespace LuaItem
         E->Push(item->GetTemplate()->StatsCount);
         return 1;
     }
-#endif
 
     /**
      * Returns the stat info of the specified stat slot of this [Item]
@@ -712,21 +622,12 @@ namespace LuaItem
         int32 statValue = 0;
         int32 statType = 0;
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         if (statSlot > 0 && statSlot <= item->GetTemplate()->StatsCount)
         {
             auto& statEntry = item->GetTemplate()->ItemStat[statSlot - 1];
             statValue = statEntry.ItemStatValue;
             statType = statEntry.ItemStatType;
         }
-#else
-        if (statSlot > 0 && statSlot <= MAX_ITEM_PROTO_STATS)
-        {
-            auto owner = item->GetOwner();
-            statValue = item->GetItemStatValue(statSlot, owner);
-            statType = item->GetItemStatType(statSlot);
-        } 
-#endif
 
         E->Push(statValue);
         E->Push(statType);
@@ -743,12 +644,11 @@ namespace LuaItem
      */
     int GetDamageInfo(Eluna* E, Item* item)
     {
-        [[maybe_unused]] uint8 damageSlot = E->CHECKVAL<uint8>(2); //Damage slot does not apply in retail
+        uint8 damageSlot = E->CHECKVAL<uint8>(2);
         uint32 damageType = 0;
         float damageMin = 0;
         float damageMax = 0;
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         if (damageSlot > 0 && damageSlot <= MAX_ITEM_PROTO_DAMAGES)
         {
             auto& damageEntry = item->GetTemplate()->Damage[damageSlot - 1];
@@ -756,19 +656,7 @@ namespace LuaItem
             damageMin = damageEntry.DamageMin;
             damageMax = damageEntry.DamageMax;
         }
-#else
-        auto owner = item->GetOwner();
-        auto itemTemplate = item->GetTemplate();
-        damageType = itemTemplate->GetDamageType();
-        float dps = itemTemplate->GetDPS(item->GetItemLevel(owner));
 
-        if (dps > 0.0f)
-        {
-            float avgDamage = dps * itemTemplate->GetDelay() * 0.001f;
-            damageMin = (itemTemplate->GetDmgVariance() * -0.5f + 1.0f) * avgDamage;
-            damageMax = floor(float(avgDamage * (itemTemplate->GetDmgVariance() * 0.5f + 1.0f) + 0.5f));
-        }
-#endif
         E->Push(damageType);
         E->Push(damageMin);
         E->Push(damageMax);
@@ -782,11 +670,7 @@ namespace LuaItem
      */
     int GetSpeed(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetTemplate()->Delay);
-#else
-        E->Push(item->GetTemplate()->GetDelay());
-#endif
         return 1;
     }
 
@@ -797,12 +681,7 @@ namespace LuaItem
      */
     int GetArmor(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetTemplate()->Armor);
-#else
-        auto itemLevel = item->GetItemLevel(item->GetOwner());
-        E->Push(item->GetTemplate()->GetArmor(itemLevel));
-#endif
         return 1;
     }
 
@@ -813,11 +692,7 @@ namespace LuaItem
      */
     int GetMaxDurability(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY));
-#else
-        E->Push(item->m_itemData->MaxDurability);
-#endif
         return 1;
     }
 
@@ -828,15 +703,10 @@ namespace LuaItem
      */
     int GetDurability(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(item->GetUInt32Value(ITEM_FIELD_DURABILITY));
-#else
-        E->Push(item->m_itemData->Durability);
-#endif
         return 1;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
     /**
      * Returns the random property ID of this [Item]
      *
@@ -858,7 +728,6 @@ namespace LuaItem
         E->Push(item->GetTemplate()->RandomSuffix);
         return 1;
     }
-#endif
 
     /**
      * Returns the item set ID of this [Item]
@@ -867,11 +736,7 @@ namespace LuaItem
      */
     int GetItemSet(Eluna* E, Item* item)
     {
-#if ELUNA_EXPANSION >= EXP_CATA
-        E->Push(item->GetTemplate()->GetItemSet());
-#else
         E->Push(item->GetTemplate()->ItemSet);
-#endif
         return 1;
     }
 
@@ -971,15 +836,10 @@ namespace LuaItem
     int SetRandomProperty(Eluna* E, Item* item)
     {
         uint32 randomPropId = E->CHECKVAL<uint32>(2);
-#if ELUNA_EXPANSION < EXP_RETAIL
         item->SetItemRandomProperties(randomPropId);
-#else
-        item->AddBonuses(randomPropId);
-#endif
         return 0;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
     /**
      * Sets the random suffix for the [Item] from a given random suffix ID.
      *
@@ -991,7 +851,6 @@ namespace LuaItem
         item->SetItemRandomProperties(-(int32)randomPropId);
         return 0;
     }
-#endif
 
     /* OTHER */
     /**
@@ -1045,6 +904,8 @@ namespace LuaItem
         { "GetSlot", &LuaItem::GetSlot },
         { "GetBagSlot", &LuaItem::GetBagSlot },
         { "GetEnchantmentId", &LuaItem::GetEnchantmentId },
+        { "GetSpellId", &LuaItem::GetSpellId },
+        { "GetSpellTrigger", &LuaItem::GetSpellTrigger },
         { "GetItemLink", &LuaItem::GetItemLink },
         { "GetClass", &LuaItem::GetClass },
         { "GetSubClass", &LuaItem::GetSubClass },
@@ -1054,7 +915,7 @@ namespace LuaItem
         { "GetQuality", &LuaItem::GetQuality },
         { "GetFlags", &LuaItem::GetFlags },
         { "GetFlags2", &LuaItem::GetFlags2 },
-        { "GetExtraFlags", &LuaItem::GetExtraFlags },
+        { "GetExtraFlags", &LuaItem::GetExtraFlags },		
         { "GetBuyCount", &LuaItem::GetBuyCount },
         { "GetBuyPrice", &LuaItem::GetBuyPrice },
         { "GetSellPrice", &LuaItem::GetSellPrice },
@@ -1063,6 +924,9 @@ namespace LuaItem
         { "GetAllowableRace", &LuaItem::GetAllowableRace },
         { "GetItemLevel", &LuaItem::GetItemLevel },
         { "GetRequiredLevel", &LuaItem::GetRequiredLevel },
+        { "GetStatsCount", &LuaItem::GetStatsCount },
+        { "GetRandomProperty", &LuaItem::GetRandomProperty },
+        { "GetRandomSuffix", &LuaItem::GetRandomSuffix },
         { "GetItemSet", &LuaItem::GetItemSet },
         { "GetBagSize", &LuaItem::GetBagSize },
         { "GetStatInfo", &LuaItem::GetStatInfo },
@@ -1071,30 +935,13 @@ namespace LuaItem
         { "GetArmor", &LuaItem::GetArmor },
         { "GetMaxDurability", &LuaItem::GetMaxDurability },
         { "GetDurability", &LuaItem::GetDurability },
-#if ELUNA_EXPANSION < EXP_RETAIL
-        { "GetSpellId", &LuaItem::GetSpellId },
-        { "GetSpellTrigger", &LuaItem::GetSpellTrigger },
-        { "GetStatsCount", &LuaItem::GetStatsCount },
-        { "GetRandomProperty", &LuaItem::GetRandomProperty },
-        { "GetRandomSuffix", &LuaItem::GetRandomSuffix },
-#else
-        { "GetSpellId", METHOD_REG_NONE },
-        { "GetSpellTrigger", METHOD_REG_NONE },
-        { "GetStatsCount", METHOD_REG_NONE },
-        { "GetRandomProperty", METHOD_REG_NONE },
-        { "GetRandomSuffix", METHOD_REG_NONE },
-#endif
 
         // Setters
         { "SetOwner", &LuaItem::SetOwner },
         { "SetBinding", &LuaItem::SetBinding },
         { "SetCount", &LuaItem::SetCount },
         { "SetRandomProperty", &LuaItem::SetRandomProperty },
-#if ELUNA_EXPANSION < EXP_RETAIL
         { "SetRandomSuffix", &LuaItem::SetRandomSuffix },
-#else
-        { "SetRandomSuffix", METHOD_REG_NONE },
-#endif
 
         // Boolean
         { "IsSoulBound", &LuaItem::IsSoulBound },

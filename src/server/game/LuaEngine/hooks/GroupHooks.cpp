@@ -65,7 +65,6 @@ void Eluna::OnDisband(Group* group)
     CallAllFunctions(binding, key);
 }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
 void Eluna::OnCreate(Group* group, ObjectGuid leaderGuid, GroupType groupType)
 {
     START_HOOK(GROUP_EVENT_ON_CREATE);
@@ -74,16 +73,6 @@ void Eluna::OnCreate(Group* group, ObjectGuid leaderGuid, GroupType groupType)
     HookPush(groupType);
     CallAllFunctions(binding, key);
 }
-#else
-void Eluna::OnCreate(Group* group, ObjectGuid leaderGuid, GroupFlags groupFlags)
-{
-    START_HOOK(GROUP_EVENT_ON_CREATE);
-    HookPush(group);
-    HookPush(leaderGuid);
-    HookPush(groupFlags);
-    CallAllFunctions(binding, key);
-}
-#endif
 
 bool Eluna::OnMemberAccept(Group* group, Player* player)
 {

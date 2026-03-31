@@ -225,10 +225,8 @@ ElunaEventProcessor* EventMgr::GetGlobalProcessor(GlobalEventSpace space)
 
 uint64 EventMgr::CreateObjectProcessor(WorldObject* obj)
 {
-#if !ELUNA_CMANGOS && !ELUNA_VMANGOS && (ELUNA_EXPANSION != EXP_RETAIL)
+#if !ELUNA_CMANGOS && !ELUNA_VMANGOS
     uint64 id = obj->GetGUID().GetRawValue();
-#elif ELUNA_EXPANSION == EXP_RETAIL
-    uint64 id = obj->GetGUID().GetCounter();
 #else
     uint64 id = obj->GetObjectGuid().GetRawValue();
 #endif

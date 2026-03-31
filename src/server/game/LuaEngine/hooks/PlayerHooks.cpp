@@ -257,7 +257,6 @@ void Eluna::OnTalentsReset(Player* pPlayer, bool noCost)
     CallAllFunctions(binding, key);
 }
 
-#if ELUNA_EXPANSION < EXP_CATA
 void Eluna::OnMoneyChanged(Player* pPlayer, int32& amount)
 {
     START_HOOK(PLAYER_EVENT_ON_MONEY_CHANGE);
@@ -282,7 +281,8 @@ void Eluna::OnMoneyChanged(Player* pPlayer, int32& amount)
 
     CleanUpStack(2);
 }
-#else
+
+#if ELUNA_EXPANSION >= EXP_CATA
 void Eluna::OnMoneyChanged(Player* pPlayer, int64& amount)
 {
     START_HOOK(PLAYER_EVENT_ON_MONEY_CHANGE);
@@ -297,7 +297,7 @@ void Eluna::OnMoneyChanged(Player* pPlayer, int64& amount)
 
         if (lua_isnumber(L, r))
         {
-            amount = CHECKVAL<int64>(r);
+            amount = CHECKVAL<int32>(r);
             // Update the stack for subsequent calls.
             ReplaceArgument(amount, amountIndex);
         }

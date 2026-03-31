@@ -134,7 +134,6 @@ void Eluna::OnChange(Weather* /*weather*/, uint32 zone, WeatherState state, floa
     CallAllFunctions(binding, key);
 }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
 // Auction House
 void Eluna::OnAdd(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 {
@@ -260,7 +259,6 @@ void Eluna::OnExpire(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
     HookPush(entry->bidder);
     CallAllFunctions(binding, key);
 }
-#endif
 
 void Eluna::OnOpenStateChange(bool open)
 {

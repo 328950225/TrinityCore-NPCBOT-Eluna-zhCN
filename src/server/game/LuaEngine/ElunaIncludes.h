@@ -16,12 +16,7 @@
 #include "CellImpl.h"
 #include "Channel.h"
 #include "Chat.h"
-#if ELUNA_EXPANSION < EXP_RETAIL
 #include "DBCStores.h"
-#else
-#include "DB2Stores.h"
-#include "ChatPackets.h"
-#endif
 #include "GameEventMgr.h"
 #include "GossipDef.h"
 #include "GridNotifiers.h"
@@ -45,6 +40,7 @@
 #include "ScriptMgr.h"
 #include "Spell.h"
 #include "SpellAuras.h"
+#include "SpellAuraEffects.h"
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
 #include "WorldPacket.h"
@@ -135,7 +131,7 @@
 #endif
 
 #if !defined ELUNA_MANGOS
-#if ELUNA_EXPANSION > EXP_CLASSIC && ELUNA_EXPANSION < EXP_RETAIL
+#if ELUNA_EXPANSION > EXP_CLASSIC
 typedef Opcodes OpcodesList;
 #endif
 #endif

@@ -146,11 +146,7 @@ namespace LuaCreature
      */
     int CanAggro(Eluna* E, Creature* creature)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(!creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC));
-#else
-        E->Push(!creature->HasUnitFlag(UNIT_FLAG_IMMUNE_TO_NPC));
-#endif
         return 1;
     }
 
@@ -174,11 +170,7 @@ namespace LuaCreature
      */
     int CanWalk(Eluna* E, Creature* creature)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(creature->CanWalk());
-#else
-        E->Push(!creature->IsAquatic());
-#endif
         return 1;
     }
 
@@ -202,11 +194,7 @@ namespace LuaCreature
      */
     int IsElite(Eluna* E, Creature* creature)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(creature->isElite());
-#else
-        E->Push(creature->IsElite());
-#endif
         return 1;
     }
 
@@ -282,11 +270,7 @@ namespace LuaCreature
     {
         uint32 spell = E->CHECKVAL<uint32>(2);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         if (const SpellInfo* info = sSpellMgr->GetSpellInfo(spell))
-#else
-        if (const SpellInfo* info = sSpellMgr->GetSpellInfo(spell, DIFFICULTY_NONE))
-#endif
             E->Push(info->GetCategory() && creature->GetSpellHistory()->HasCooldown(spell));
         else
             E->Push(false);
@@ -363,7 +347,6 @@ namespace LuaCreature
         return 1;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
     /**
      * Returns true if the [Creature] is damaged enough for looting
      *
@@ -374,7 +357,6 @@ namespace LuaCreature
         E->Push(creature->IsDamageEnoughForLootingAndReward());
         return 1;
     }
-#endif
 
     /**
      * Returns true if the [Creature] can start attacking specified target
@@ -440,11 +422,7 @@ namespace LuaCreature
      */
     int GetWaypointPath(Eluna* E, Creature* creature)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(creature->GetWaypointPath());
-#else
-        E->Push(creature->GetWaypointPathId());
-#endif
         return 1;
     }
 
@@ -501,7 +479,7 @@ namespace LuaCreature
         return 1;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
+
     /**
      * Returns the [Group] that can loot this [Creature].
      *
@@ -523,7 +501,6 @@ namespace LuaCreature
         E->Push(creature->GetLootRecipient());
         return 1;
     }
-#endif
 
     /**
      * Returns the [Creature]'s script name.
@@ -579,16 +556,8 @@ namespace LuaCreature
     {
         uint32 spell = E->CHECKVAL<uint32>(2);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell))
             E->Push(creature->GetSpellHistory()->GetRemainingCooldown(spellInfo));
-#else
-        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell, DIFFICULTY_NONE))
-        {
-            Milliseconds remainingCooldown = creature->GetSpellHistory()->GetRemainingCooldown(spellInfo);
-            E->Push(remainingCooldown.count());
-        }
-#endif
         else
             E->Push(0);
 
@@ -817,11 +786,7 @@ namespace LuaCreature
         float threat = E->CHECKVAL<float>(3, true);
         uint32 spell = E->CHECKVAL<uint32>(4, 0);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         creature->GetThreatManager().AddThreat(victim, threat, spell ? sSpellMgr->GetSpellInfo(spell) : NULL, true, true);
-#else
-        creature->GetThreatManager().AddThreat(victim, threat, spell ? sSpellMgr->GetSpellInfo(spell, DIFFICULTY_NONE) : NULL, true, true);
-#endif
         return 0;
     }
 
@@ -902,11 +867,7 @@ namespace LuaCreature
      */
     int GetNPCFlags(Eluna* E, Creature* creature)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(creature->GetUInt32Value(UNIT_NPC_FLAGS));
-#else
-        E->Push(creature->GetNpcFlags());
-#endif
         return 1;
     }
 
@@ -931,15 +892,10 @@ namespace LuaCreature
      */
     int GetRank(Eluna* E, Creature* creature)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         E->Push(creature->GetCreatureTemplate()->rank);
-#else
-        E->Push(static_cast<int>(creature->GetCreatureClassification()));
-#endif
         return 1;
     }
 
-#if ELUNA_EXPANSION < EXP_RETAIL
     /**
      * Returns the [Creature]'s shield block value.
      *
@@ -950,7 +906,6 @@ namespace LuaCreature
         E->Push(creature->GetShieldBlockValue());
         return 1;
     }
-#endif
 
     /**
      * Returns the loot mode for the [Creature].
@@ -992,11 +947,7 @@ namespace LuaCreature
     {
         uint32 flags = E->CHECKVAL<uint32>(2);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         creature->SetUInt32Value(UNIT_NPC_FLAGS, flags);
-#else
-        creature->SetNpcFlag((NPCFlags)flags);
-#endif
         return 0;
     }
 
@@ -1087,15 +1038,9 @@ namespace LuaCreature
         uint32 off_hand = E->CHECKVAL<uint32>(3);
         uint32 ranged = E->CHECKVAL<uint32>(4);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         creature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, main_hand);
         creature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 1, off_hand);
         creature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, ranged);
-#else
-        creature->SetVirtualItem(0, main_hand);
-        creature->SetVirtualItem(1, off_hand);
-        creature->SetVirtualItem(2, ranged);
-#endif
         return 0;
     }
 
@@ -1108,17 +1053,10 @@ namespace LuaCreature
     {
         bool allow = E->CHECKVAL<bool>(2, true);
 
-#if ELUNA_EXPANSION < EXP_RETAIL
         if (allow)
             creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
         else
             creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
-#else
-        if (allow)
-            creature->RemoveUnitFlag(UNIT_FLAG_IMMUNE_TO_NPC);
-        else
-            creature->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_NPC);
-#endif
 
         return 0;
     }
@@ -1264,11 +1202,7 @@ namespace LuaCreature
      */
     int MoveWaypoint(Eluna* /*E*/, Creature* creature)
     {
-#if ELUNA_EXPANSION < EXP_RETAIL
         creature->GetMotionMaster()->MovePath(creature->GetWaypointPath(), true);
-#else
-        creature->GetMotionMaster()->MovePath(creature->GetWaypointPathId(), true);
-#endif
         return 0;
     }
 
@@ -1488,21 +1422,15 @@ namespace LuaCreature
         { "GetCurrentWaypointId", &LuaCreature::GetCurrentWaypointId },
         { "GetWaypointPath", &LuaCreature::GetWaypointPath },
         { "GetLootMode", &LuaCreature::GetLootMode },
+        { "GetLootRecipient", &LuaCreature::GetLootRecipient },
+        { "GetLootRecipientGroup", &LuaCreature::GetLootRecipientGroup },
         { "GetNPCFlags", &LuaCreature::GetNPCFlags },
         { "GetExtraFlags", &LuaCreature::GetExtraFlags },
         { "GetRank", &LuaCreature::GetRank },
+        { "GetShieldBlockValue", &LuaCreature::GetShieldBlockValue },
         { "GetDBTableGUIDLow", &LuaCreature::GetDBTableGUIDLow },
         { "GetCreatureFamily", &LuaCreature::GetCreatureFamily },
         { "GetThreat", &LuaCreature::GetThreat },
-#if ELUNA_EXPANSION < EXP_RETAIL
-        { "GetLootRecipient", &LuaCreature::GetLootRecipient },
-        { "GetLootRecipientGroup", &LuaCreature::GetLootRecipientGroup },
-        { "GetShieldBlockValue", &LuaCreature::GetShieldBlockValue },
-#else
-        { "GetLootRecipient", METHOD_REG_NONE },
-        { "GetLootRecipientGroup", METHOD_REG_NONE },
-        { "GetShieldBlockValue", METHOD_REG_NONE },
-#endif
 
         // Setters
         { "SetRegeneratingHealth", &LuaCreature::SetRegeneratingHealth },
@@ -1546,16 +1474,12 @@ namespace LuaCreature
         { "IsTargetableForAttack", &LuaCreature::IsTargetableForAttack },
         { "CanCompleteQuest", &LuaCreature::CanCompleteQuest },
         { "IsReputationGainDisabled", &LuaCreature::IsReputationGainDisabled },
+        { "IsDamageEnoughForLootingAndReward", &LuaCreature::IsDamageEnoughForLootingAndReward },
         { "HasLootMode", &LuaCreature::HasLootMode },
         { "HasSpell", &LuaCreature::HasSpell },
         { "HasQuest", &LuaCreature::HasQuest },
         { "HasSpellCooldown", &LuaCreature::HasSpellCooldown },
         { "CanFly", &LuaCreature::CanFly },
-#if ELUNA_EXPANSION < EXP_RETAIL
-        { "IsDamageEnoughForLootingAndReward", &LuaCreature::IsDamageEnoughForLootingAndReward },
-#else
-        { "IsDamageEnoughForLootingAndReward", METHOD_REG_NONE },
-#endif
 
         // Other
         { "FleeToGetAssistance", &LuaCreature::FleeToGetAssistance },

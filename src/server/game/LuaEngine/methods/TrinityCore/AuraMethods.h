@@ -168,6 +168,18 @@ namespace LuaAura
         return 0;
     }
 
+    /**
+     * Returns the [SpellInfo] of the spell that created this [Aura].
+     *
+     * @return [SpellInfo] spellInfo
+     */
+    int GetSpellInfo(Eluna* E, Aura* aura)
+    {
+        ElunaSpellInfo info(aura->GetId());
+        E->Push(&info);
+        return 1;
+    }
+
     ElunaRegister<Aura> AuraMethods[] =
     {
         // Getters
@@ -179,6 +191,7 @@ namespace LuaAura
         { "GetAuraId", &LuaAura::GetAuraId },
         { "GetStackAmount", &LuaAura::GetStackAmount },
         { "GetOwner", &LuaAura::GetOwner },
+        { "GetSpellInfo", &LuaAura::GetSpellInfo },
 
         // Setters
         { "SetDuration", &LuaAura::SetDuration },

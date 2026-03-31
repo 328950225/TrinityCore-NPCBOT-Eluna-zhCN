@@ -13,7 +13,7 @@ extern "C"
 #include "lauxlib.h"
 #if __has_include(<luajit.h>)
 #include <luajit.h>
-#endif				   
+#endif
 };
 
 /* Compatibility layer for compiling with Lua 5.1 or LuaJIT */

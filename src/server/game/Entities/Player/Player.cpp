@@ -342,7 +342,6 @@ Player::Player(WorldSession* session): Unit(true)
     m_achievementMgr = new AchievementMgr(this);
     m_reputationMgr = new ReputationMgr(this);
 
-    m_groupUpdateTimer.Reset(5000);
 
     /////////////// NPCBot System //////////////////
     _botMgr = new BotMgr(this);

@@ -17,6 +17,7 @@
 #include "Item.h"
 #include "Map.h"
 #include "SharedDefines.h"
+#include "Spell.h"
 #include "Weather.h"
 #include "World.h"
 #if defined ELUNA_VMANGOS
@@ -35,6 +36,7 @@
 
 #include <mutex>
 #include <memory>
+#include "ElunaSpellWrapper.h"
 
 extern "C"
 {
@@ -216,11 +218,14 @@ private:
     template<typename K1, typename K2> int SetupStack(BindingMap<K1>* bindings1, BindingMap<K2>* bindings2, const K1& key1, const K2& key2, int number_of_arguments);
                                        int CallOneFunction(int number_of_functions, int number_of_arguments, int number_of_results);
                                        void CleanUpStack(int number_of_arguments);
-    template<typename T>               void ReplaceArgument(T value, uint8 index);
+    template<typename T>               void ReplaceArgument(T value, int index);
     template<typename K1, typename K2> void CallAllFunctions(BindingMap<K1>* bindings1, BindingMap<K2>* bindings2, const K1& key1, const K2& key2);
     template<typename K1, typename K2> bool CallAllFunctionsBool(BindingMap<K1>* bindings1, BindingMap<K2>* bindings2, const K1& key1, const K2& key2, bool default_value = false);
-
-    // Same as above but for only one binding instead of two.
+    template<typename K1, typename K2> int32 CallAllFunctionsInt(BindingMap<K1>* bindings1, BindingMap<K2>* bindings2, const K1& key1, const K2& key2, int32 default_value = 0);
+    template<typename... Outs, size_t... Is> void ApplyMultiReturnsImpl(int r, std::tuple<Outs&...>& outs, const std::array<int, sizeof...(Outs)>& indices, std::index_sequence<Is...>);
+    template<typename K1, typename K2, typename... Outs> void CallAllFunctionsMultiReturn(BindingMap<K1>* bindings1, BindingMap<K2>* bindings2, const K1& key1, const K2& key2, std::tuple<Outs&...> outs, const std::array<int, sizeof...(Outs)>& out_arg_indices);
+    template<typename K1, typename K2, typename T>
+    void CallAllFunctionsTable(BindingMap<K1>* bindings1, BindingMap<K2>* bindings2, const K1& key1, const K2& key2, std::list<T*>& list);   // Same as above but for only one binding instead of two.
     // `key` is passed twice because there's no NULL for references, but it's not actually used if `bindings2` is NULL.
     template<typename K> int SetupStack(BindingMap<K>* bindings, const K& key, int number_of_arguments)
     {
@@ -234,7 +239,19 @@ private:
     {
         return CallAllFunctionsBool<K, K>(bindings, NULL, key, key, default_value);
     }
-
+    template<typename K> int32 CallAllFunctionsInt(BindingMap<K>* bindings, const K& key, int default_value = 0)
+    {
+        return CallAllFunctionsInt<K, K>(bindings, NULL, key, key, default_value);
+    }
+    template<typename K, typename... Outs> void CallAllFunctionsMultiReturn(BindingMap<K>* bindings, const K& key, std::tuple<Outs&...> outs, const std::array<int, sizeof...(Outs)>& out_arg_indices)
+    {
+        CallAllFunctionsMultiReturn<K, K>(bindings, NULL, key, key, outs, out_arg_indices);
+    }
+    template<typename K, typename T>
+    void CallAllFunctionsTable(BindingMap<K>* bindings, const K& key, std::list<T*>& list)
+    {
+        CallAllFunctionsTable<K, K, T>(bindings, NULL, key, key, list);
+    }
     // Non-static pushes, to be used in hooks.
     // They up the pushed value counter for hook helper functions.
     void HookPush()                                 { Push(); ++push_counter; }
@@ -484,7 +501,6 @@ public:
     void OnDamaged(GameObject* pGameObject, Player* attacker);
 #endif
 #endif
-
     void OnLootStateChanged(GameObject* pGameObject, uint32 state);
     void OnGameObjectStateChanged(GameObject* pGameObject, uint32 state);
     void UpdateAI(GameObject* pGameObject, uint32 diff);
@@ -508,7 +524,6 @@ public:
     void OnLevelChanged(Player* pPlayer, uint8 oldLevel);
     void OnFreeTalentPointsChanged(Player* pPlayer, uint32 newPoints);
     void OnTalentsReset(Player* pPlayer, bool noCost);
-							  
     void OnMoneyChanged(Player* pPlayer, int32& amount);
 #if ELUNA_EXPANSION >= EXP_CATA
     void OnMoneyChanged(Player* pPlayer, int64& amount);
@@ -553,26 +568,19 @@ public:
     /* Weather */
     void OnChange(Weather* weather, uint32 zone, WeatherState state, float grade);
 
-								
     /* Auction House */
     void OnAdd(AuctionHouseObject* ah, AuctionEntry* entry);
     void OnRemove(AuctionHouseObject* ah, AuctionEntry* entry);
     void OnSuccessful(AuctionHouseObject* ah, AuctionEntry* entry);
     void OnExpire(AuctionHouseObject* ah, AuctionEntry* entry);
-	  
 
     /* Guild */
     void OnAddMember(Guild* guild, Player* player, uint32 plRank);
-								 
-																		  
-	 
     void OnRemoveMember(Guild* guild, Player* player, bool isDisbanding);
-	  
     void OnMOTDChanged(Guild* guild, const std::string& newMotd);
     void OnInfoChanged(Guild* guild, const std::string& newInfo);
     void OnCreate(Guild* guild, Player* leader, const std::string& name);
     void OnDisband(Guild* guild);
-							  
     void OnMemberWitdrawMoney(Guild* guild, Player* player, uint32& amount, bool isRepair);
     void OnMemberDepositMoney(Guild* guild, Player* player, uint32& amount);
 #if ELUNA_EXPANSION >= EXP_CATA
@@ -589,11 +597,7 @@ public:
     void OnRemoveMember(Group* group, ObjectGuid guid, uint8 method);
     void OnChangeLeader(Group* group, ObjectGuid newLeaderGuid, ObjectGuid oldLeaderGuid);
     void OnDisband(Group* group);
-								
     void OnCreate(Group* group, ObjectGuid leaderGuid, GroupType groupType);
-	 
-																			  
-	  
     bool OnMemberAccept(Group* group, Player* player);
 
     /* Map */
@@ -636,6 +640,28 @@ public:
 
     /* Spell */
     void OnSpellCast(Spell* pSpell, bool skipCheck);
+    bool OnAuraApplication(Aura* aura, AuraEffect const* auraEff, Unit* target, uint8 mode, bool apply);
+    void OnAuraDispel(Aura* aura, DispelInfo* dispelInfo);
+    bool OnPeriodicTick(Aura* aura, AuraEffect const* auraEff, Unit* target);
+    void OnPeriodicUpdate(Aura* aura, AuraEffect const* auraEff);
+    void OnAuraCalcAmount(Aura* aura, AuraEffect const* auraEff, int32& amount, bool& canBeRecalculated);
+    void OnCalcPeriodic(Aura* aura, AuraEffect const* auraEff, bool& isPeriodic, int32& amplitude);
+    bool OnAuraCanProc(Aura* aura, ProcEventInfo& procInfo);
+    bool OnAuraProc(Aura* aura, ProcEventInfo& procInfo);
+    uint32 OnCheckCast(Spell* pSpell);
+    void OnBeforeCast(Spell* pSpell);
+    void OnAfterCast(Spell* pSpell);
+    void OnObjectAreaTargetSelect(Spell* pSpell, uint8 effIndex, std::list<WorldObject*>& targets);
+    void OnObjectTargetSelect(Spell* pSpell, uint8 effIndex,  WorldObject*& target);
+    void OnDestinationTargetSelect(Spell* pSpell, uint8 effIndex, SpellDestination& target);
+    bool OnEffectLaunch(Spell* pSpell, uint8 effIndex, uint8 mode, bool preventDefault);
+    bool OnEffectLaunchTarget(Spell* pSpell, uint8 effIndex, uint8 mode, bool preventDefault);
+    bool OnEffectHit(Spell* pSpell, uint8 effIndex, uint8 mode, bool preventDefault);
+    bool OnEffectHitTarget(Spell* pSpell, uint8 effIndex, uint8 mode, bool preventDefault);
+    void OnBeforeSpellHit(Spell* pSpell, uint8 missInfo);
+    void OnSpellHit(Spell* pSpell);
+    void OnAfterSpellHit(Spell* pSpell);
+    void OnEffectCalcAbsorb(Spell* pSpell, DamageInfo const& damageInfo, uint32& resistAmount, int32& absorbAmount);
 };
 template<> Unit* Eluna::CHECKOBJ<Unit>(int narg, bool error);
 template<> Object* Eluna::CHECKOBJ<Object>(int narg, bool error);

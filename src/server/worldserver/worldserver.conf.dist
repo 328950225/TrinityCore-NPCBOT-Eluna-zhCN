@@ -181,7 +181,7 @@ ThreadPool = 2
 #                     "/usr/bin/cmake"
 #        Default:     ""
 
-CMakeCommand  = ""
+CMakeCommand  = "C:/Program Files/CMake/bin/cmake.exe"
 
 #
 #    BuildDirectory
@@ -190,7 +190,7 @@ CMakeCommand  = ""
 #        Example:     "../TrinityCore"
 #        Default:     ""
 
-BuildDirectory  = ""
+BuildDirectory  = "E:\code\TrinityCore-NPCBOT-Eluna-zhCN"
 
 #
 #    SourceDirectory
@@ -199,7 +199,7 @@ BuildDirectory  = ""
 #        Example:     "../TrinityCore"
 #        Default:     ""
 
-SourceDirectory  = "E:\sync\PC"
+SourceDirectory  = "D:\git\TrinityCore-NPCBOT-Eluna-zhCN"
 
 #
 #    MySQLExecutable
@@ -360,7 +360,7 @@ ChangeWeatherInterval = 11600000
 #        Description: Time (in milliseconds) for player save interval.
 #        Default:     90000 - (90 seconds)
 
-PlayerSaveInterval = 900000
+PlayerSaveInterval = 90000
 
 #
 #    PlayerSave.Stats.MinLevel
@@ -1380,7 +1380,7 @@ TOTPMasterSecret =
 #                     4  - (Enable world only)
 #                     0  - (All disabled)
 
-Updates.EnableDatabases = 0
+Updates.EnableDatabases = 4
 
 #
 #    Updates.AutoSetup
@@ -1388,7 +1388,7 @@ Updates.EnableDatabases = 0
 #        Default:     1 - (Enabled)
 #                     0 - (Disabled)
 
-Updates.AutoSetup   = 0
+Updates.AutoSetup   = 1
 
 #
 #    Updates.Redundancy
@@ -1533,7 +1533,7 @@ Warden.NumClientModChecks = 1
 #        Default:     600 - (10 Minutes)
 #                     0 - (Disabled, client won't be kicked)
 
-Warden.ClientResponseDelay = 600
+Warden.ClientResponseDelay = 0
 
 #
 #    Warden.ClientCheckHoldOff
@@ -3189,7 +3189,7 @@ XP.Boost.Rate = 2.0
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 
-PlayerStart.AllSpells = 0
+PlayerStart.AllSpells = 1
 
 #
 #    PlayerStart.MapsExplored
@@ -4286,7 +4286,7 @@ NpcBot.Enable = 1
 #        Default:     1 - (Enable)
 #                     0 - (Disable)
 
-NpcBot.LogToDB = 1
+NpcBot.LogToDB = 0
 
 #
 #    NpcBot.MaxBots
@@ -4341,7 +4341,7 @@ NpcBot.Botgiver.FilterRaces = 0
 #                       且在当前主人下线前不会切换。
 #                       原始所有者具有优先权，但仅在机器人当前没有主人时生效。
 
-NpcBot.SharedOwnership.Options = 0
+NpcBot.SharedOwnership.Options = 8
 
 #
 #    NpcBot.SharedOwnership.MaxOwners
@@ -4833,7 +4833,7 @@ NpcBot.EnrageOnDismiss = 0
 #        Note2:       你必须确保 creature_template 表中至少拥有此数量的、未被召唤的机器人模板。
 #        Default:     0 - (禁用)
 
-NpcBot.WanderingBots.Continents.Count = 200
+NpcBot.WanderingBots.Continents.Count = 0
 
 #
 #    NpcBot.WanderingBots.Continents.Levels
@@ -4901,7 +4901,7 @@ NpcBot.WanderingBots.MaxItemLevel.Levels = 0,0,0,0,0,0,0,0,0
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.WanderingBots.BG.Enable = 0
+NpcBot.WanderingBots.BG.Enable = 1
 
 #
 #    NpcBot.WanderingBots.BG.CapLevel
@@ -4910,7 +4910,7 @@ NpcBot.WanderingBots.BG.Enable = 0
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.WanderingBots.BG.CapLevel = 0
+NpcBot.WanderingBots.BG.CapLevel = 1
 
 #
 #    NpcBot.WanderingBots.BG.CapLevelByFirstPlayer
@@ -5007,7 +5007,7 @@ NpcBot.HK.Enable = 1
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.HK.Message.Enable = 0
+NpcBot.HK.Message.Enable = 1
 
 #
 #    NpcBot.HK.Achievements.Enable
@@ -5015,7 +5015,7 @@ NpcBot.HK.Message.Enable = 0
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.HK.Achievements.Enable = 0
+NpcBot.HK.Achievements.Enable = 1
 
 #
 #    NpcBot.HK.Rate.Honor
@@ -5033,7 +5033,7 @@ NpcBot.HK.Rate.Honor = 1.0
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.Premade.Enable = 0
+NpcBot.Premade.Enable = 1
 
 #
 ###################################################################################################

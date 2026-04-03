@@ -13,6 +13,7 @@
 #include "Containers.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "DBCStores.h"
 #include "GameTime.h"
 #include "GroupMgr.h"
 #include "Item.h"
@@ -20,6 +21,7 @@
 #include "Map.h"
 #include "MapManager.h"
 #include "ObjectMgr.h"
+#include "Player.h"
 #include "ScriptMgr.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -370,7 +372,7 @@ private:
         _botsData.emplace(std::piecewise_construct, std::forward_as_tuple(next_bot_id), std::forward_as_tuple(bot_ai::DefaultRolesForClass(bot_class, bot_spec), bot_faction, bot_spec));
         _botsExtras.emplace(next_bot_id, NpcBotExtras{.race = orig_extras->race, .bclass = bot_class});
         if (NpcBotAppearanceData const* orig_apdata = BotDataMgr::SelectNpcBotAppearance(orig_entry))
-            _botsAppearanceData.emplace(next_bot_id, NpcBotAppearanceData(*orig_apdata));
+            _botsAppearanceData.emplace(std::piecewise_construct, std::forward_as_tuple(next_bot_id), std::forward_as_tuple(orig_apdata->gender, orig_apdata->skin, orig_apdata->face, orig_apdata->hair, orig_apdata->haircolor, orig_apdata->features));
 
         int8 beqId = 1;
         _botsWanderCreatureEquipmentTemplates[next_bot_id] = sObjectMgr->GetEquipmentInfo(orig_entry, beqId);
@@ -440,7 +442,7 @@ public:
             vec.reserve(WanderNode::GetWPMapsCount() * 20u);
 
         auto& [spawns_a, spawns_h, spawns_n] = spawns_all;
-        WanderNode::DoForAllWPs([map_id = map_id, &spawns_a, &spawns_h, &spawns_n](WanderNode const* wp) {
+        WanderNode::DoForAllWPs([map_id = map_id, &spawns_a = spawns_a, &spawns_h = spawns_h, &spawns_n = spawns_n](WanderNode const* wp) {
             MapEntry const* mapEntry = sMapStore.LookupEntry(wp->GetMapId());
             if ((map_id == -1) ? mapEntry->IsWorldMap() : (int32(mapEntry->ID) == map_id))
             {

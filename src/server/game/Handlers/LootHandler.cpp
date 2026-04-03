@@ -37,6 +37,7 @@
 //npcbot
 #include "botconfig.h"
 #include "botmgr.h"
+#include "World.h"
 //end npcbot
 
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recvData)

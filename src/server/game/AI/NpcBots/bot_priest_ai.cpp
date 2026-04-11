@@ -1,4 +1,5 @@
 #include "bot_ai.h"
+#include "botdatamgr.h"
 #include "botlogtraits.h"
 #include "botmgr.h"
 #include "botspell.h"
@@ -770,17 +771,15 @@ public:
 
         void Counter(uint32 diff)
         {
-            if (ShackcheckTimer > diff || !IsSpellReady(SHACKLE_UNDEAD_1, diff) || Shackcheck || Rand() > 65 ||
+            if (ShackcheckTimer > diff || Shackcheck || Rand() > 65 ||
                 (HasRole(BOT_ROLE_HEAL) && (IsCasting() || GetManaPCT(me) < 20)))
                 return;
 
             //always glyphed so <= 0.5 sec cast time
-            if (Unit* target = FindCastingTarget(CalcSpellMaxRange(SHACKLE_UNDEAD_1), 0, SHACKLE_UNDEAD_1))
-            {
-                me->InterruptNonMeleeSpells(false);
-                if (doCast(target, GetSpell(SHACKLE_UNDEAD_1)))
-                    return;
-            }
+            if (IsSpellReady(SHACKLE_UNDEAD_1, diff, false) && !HasQueuedSpellAction(SHACKLE_UNDEAD_1))
+                if (Unit const* target = FindCastingTarget(CalcSpellMaxRange(SHACKLE_UNDEAD_1), 0, SHACKLE_UNDEAD_1))
+                    if (EnqueueCounterSpellAction(target->GetGUID(), SHACKLE_UNDEAD_1, true))
+                        return;
         }
 
         void CheckDispel(uint32 diff)
@@ -934,7 +933,7 @@ public:
                 {
                     u = bot;
                     if (u->IsAlive() && u->IsInWorld() && u->ToCreature()->GetBotAI()->HasRole(BOT_ROLE_HEAL) &&
-                        !IsHeroExClass(u->ToCreature()->GetBotClass()) &&
+                        !BotDataMgr::IsHeroExClass(u->ToCreature()->GetBotClass()) &&
                         GetManaPCT(u) < 70 && me->IsWithinDistInMap(u, 30) &&
                         !u->HasAuraTypeWithFamilyFlags(SPELL_AURA_MOD_CASTING_SPEED_NOT_STACK, SPELLFAMILY_PRIEST, 0x80000000) &&
                         doCast(u, GetSpell(POWER_INFUSION_1)))

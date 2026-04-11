@@ -1,4 +1,5 @@
 #include "bot_ai.h"
+#include "botdatamgr.h"
 #include "botlogtraits.h"
 #include "botmgr.h"
 #include "bottext.h"
@@ -494,32 +495,14 @@ public:
             if (!(_form == DRUID_MOONKIN_FORM || _form == BOT_STANCE_NONE))
                 return;
             //Skip Tranquility, Hurricane
-            if (GC_Timer > diff || Rand() > 35 || IsChanneling() || (HasRole(BOT_ROLE_HEAL) && IsCasting()))
+            if (GC_Timer > diff || Rand() > 35 || (!IAmFree() && IsChanneling()) || (HasRole(BOT_ROLE_HEAL) && IsCasting()))
                 return;
 
-            if (IsSpellReady(CYCLONE_1, diff))
-            {
-                if (Unit* target = FindCastingTarget(20, 0, CYCLONE_1))
-                {
-                    bool cast = false;
-                    for (uint8 i = CURRENT_GENERIC_SPELL; i != CURRENT_AUTOREPEAT_SPELL; ++i)
-                    {
-                        Spell const* spell = target->GetCurrentSpell(CurrentSpellTypes(i));
-                        if (spell && spell->GetTimer() > 1500 &&
-                            (IAmFree() ? (spell->m_targets.GetUnitTarget() == me) : (master->GetGroup() && master->GetGroup()->IsMember(spell->m_targets.GetObjectTargetGUID()))))
-                        {
-                            cast = true;
-                            break;
-                        }
-                    }
-                    if (cast)
-                    {
-                        me->InterruptNonMeleeSpells(false);
-                        if (doCast(target, GetSpell(CYCLONE_1)))
+            if (IsSpellReady(CYCLONE_1, diff, false) && !HasQueuedSpellAction(CYCLONE_1))
+                if (Unit const* target = FindCastingTarget(20, 0, CYCLONE_1))
+                    if (IsCastingOnMyParty(target, 1500))
+                        if (EnqueueCounterSpellAction(target->GetGUID(), CYCLONE_1, true))
                             return;
-                    }
-                }
-            }
         }
 
         void UpdateAI(uint32 diff) override
@@ -727,7 +710,7 @@ public:
                 (!IsTank(u) || (IsTank() && GetHealthPCT(me) > 67 &&
                 (GetHealthPCT(u) < 30 || (IsOffTank() && !IsOffTank(u) && IsPointedOffTankingTarget(mytar)) ||
                 (!IsOffTank() && IsOffTank(u) && IsPointedTankingTarget(mytar))))) &&
-                ((!IsTankingClass(u->GetClass()) && GetHealthPCT(u) < 80) || IsTank()) &&
+                ((!BotDataMgr::IsTankingClass(u->GetClass()) && GetHealthPCT(u) < 80) || IsTank()) &&
                 IsInBotParty(u))
             {
                 if (doCast(mytar, GetSpell(GROWL_1)))
@@ -753,7 +736,7 @@ public:
             {
                 u = mytar->GetVictim();
                 if (u && u != me && !IsTank(u) && IsInBotParty(u) && !CCed(mytar) && dist <= 10 && Rand() < 25 &&
-                    (!IsTankingClass(u->GetClass()) || IsTank()))
+                    (!BotDataMgr::IsTankingClass(u->GetClass()) || IsTank()))
                 {
                     if (doCast(me, GetSpell(CHALLENGING_ROAR_1)))
                         return;

@@ -8946,7 +8946,7 @@ bool Unit::IsAlwaysVisibleFor(WorldObject const* seer) const
                     return true;
 
     //npcbot - bots are always visible for owner
-    if (GetCreator() && (seer->GetGUID() == GetCreator()->GetGUID() || (seer->IsCreature() && seer->ToCreature()->GetCreator() == GetCreator())))
+    if (GetCreator() && (seer->ToUnit() == GetCreator() || (seer->IsCreature() && seer->ToCreature()->GetCreator() == GetCreator())))
         return true;
     //end npcbot
 
@@ -10282,6 +10282,14 @@ void Unit::CleanupBeforeRemoveFromMap(bool finalCleanup)
 
 void Unit::CleanupsBeforeDelete(bool finalCleanup)
 {
+    //npcbot
+    if (IsNPCBot() && IsSummon() && !ToCreature()->IsTempBot())
+        if (Unit const* creator = GetCreator())
+            if (Player const* owner = creator->ToPlayer())
+                if (owner->GetBotMgr()->GetBot(GetGUID()))
+                    owner->GetBotMgr()->RemoveBot(GetGUID(), BOT_REMOVE_UNSUMMON);
+    //end npcbot
+
     CleanupBeforeRemoveFromMap(finalCleanup);
 
     WorldObject::CleanupsBeforeDelete(finalCleanup);

@@ -1,4 +1,5 @@
 #include "bot_ai.h"
+#include "botdatamgr.h"
 #include "botlogtraits.h"
 #include "botmgr.h"
 #include "bottext.h"
@@ -667,7 +668,7 @@ public:
                 {
                     if (!(i == 0 ? member->IsPlayer() : member->IsNPCBot()) || me->GetMap() != member->FindMap() ||
                         !member->IsInCombat() || IsTank(member) || me->GetDistance(member) > 30 ||
-                        (IsTankingClass(i == 0 ? member->GetClass() : member->ToCreature()->GetBotClass()) && !me->GetMap()->IsRaid()) ||
+                        (BotDataMgr::IsTankingClass(i == 0 ? member->GetClass() : member->ToCreature()->GetBotClass()) && !me->GetMap()->IsRaid()) ||
                         (member->IsNPCBot() && member->ToCreature()->IsTempBot()) ||
                         member->HasAuraTypeWithFamilyFlags(SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE, SPELLFAMILY_PALADIN, 0x100))
                         continue;
@@ -863,7 +864,7 @@ public:
             if (!CheckAttackTarget())
                 return;
 
-            Repentance(diff);
+            CheckRepentance(diff);
             Counter(diff);
             TurnEvil(diff);
 
@@ -1002,7 +1003,7 @@ public:
             }
             if (RETRIBUTION_AURA &&
                 (!(mask & SPECIFIC_AURA_RETRIBUTION) || idMap[RETRIBUTION_AURA_1] < RETRIBUTION_AURA) &&
-                (IsMeleeClass(master->GetClass()) || IsMelee()))
+                (BotDataMgr::IsMeleeClass(master->GetClass()) || IsMelee()))
             {
                 if (doCast(me, RETRIBUTION_AURA))
                     return;
@@ -1143,14 +1144,12 @@ public:
             return false;
         }
 
-        void Repentance(uint32 diff, Unit* target = nullptr)
+        void CheckRepentance(uint32 diff)
         {
-            if (target)
-            {
-                if (IsSpellReady(REPENTANCE_1, diff) && doCast(target, GetSpell(REPENTANCE_1)))
-                    return;
-            }
-            else if (IsSpellReady(REPENTANCE_1, diff))
+            if (Rand() > 25)
+                return;
+
+            if (IsSpellReady(REPENTANCE_1, diff))
             {
                 Unit* u = FindStunTarget();
                 if (u && u->GetVictim() != me && doCast(u, GetSpell(REPENTANCE_1)))
@@ -1160,32 +1159,14 @@ public:
 
         void Counter(uint32 diff)
         {
-            if (IsCasting())
-                return;
-            if (Rand() > 60)
+            if (Rand() > 30)
                 return;
 
-            Unit* target = IsSpellReady(REPENTANCE_1, diff) ? FindCastingTarget(20, 0, REPENTANCE_1) : nullptr;
-            if (target)
-                Repentance(diff, target); //first check repentance
-            if (!target && IsSpellReady(TURN_EVIL_1, diff))
-            {
-                target = FindCastingTarget(20, 0, TURN_EVIL_1);
-                if (target && doCast(target, GetSpell(TURN_EVIL_1)))
-                    return;
-            }
-            if (!target && IsSpellReady(HOLY_WRATH_1, diff, false) && HasRole(BOT_ROLE_DPS))
-            {
-                target = FindCastingTarget(8, 0, TURN_EVIL_1); //here we check target as with turn evil cuz of same requirements
-                if (target && doCast(me, GetSpell(HOLY_WRATH_1)))
-                    return;
-            }
-            if (!target && IsSpellReady(HAMMER_OF_JUSTICE_1, diff, false))
-            {
-                target = FindCastingTarget(10, 0, HAMMER_OF_JUSTICE_1);
-                if (target && doCast(target, GetSpell(HAMMER_OF_JUSTICE_1)))
-                {}
-            }
+            for (const auto base_spell : { REPENTANCE_1, TURN_EVIL_1, HOLY_WRATH_1, HAMMER_OF_JUSTICE_1 })
+                if (IsSpellReady(base_spell, diff, false) && !HasQueuedSpellAction(base_spell))
+                    if (Unit const* target = FindCastingTarget(base_spell == HOLY_WRATH_1 ? 8.0f : CalcSpellMaxRange(base_spell), 0, base_spell))
+                        if (EnqueueCounterSpellAction(target->GetGUID(), base_spell, true))
+                            return;
         }
 
         void TurnEvil(uint32 diff)
@@ -1294,7 +1275,7 @@ public:
                 (!IsTank(u) || (IsTank() && GetHealthPCT(me) > 67 &&
                 (GetHealthPCT(u) < 30 || (IsOffTank() && !IsOffTank(u) && IsPointedOffTankingTarget(mytar)) ||
                 (!IsOffTank() && IsOffTank(u) && IsPointedTankingTarget(mytar))))) &&
-                ((!IsTankingClass(u->GetClass()) && GetHealthPCT(u) < 80) || IsTank()) &&
+                ((!BotDataMgr::IsTankingClass(u->GetClass()) && GetHealthPCT(u) < 80) || IsTank()) &&
                 IsInBotParty(u))
             {
                 if (doCast(mytar, GetSpell(HAND_OF_RECKONING_1)))
@@ -1316,7 +1297,7 @@ public:
             //RIGHTEOUS DEFENSE //No GCD
             if (IsSpellReady(RIGHTEOUS_DEFENSE_1, diff, false) && !IAmFree() && u && u != me && IsTank() &&
                 me->GetDistance(u) < 40 && mytar->IsCreature() && !mytar->IsControlledByPlayer() &&
-                !IsTankingClass(u->GetClass()) && GetHealthPCT(u) < 80 &&
+                !BotDataMgr::IsTankingClass(u->GetClass()) && GetHealthPCT(u) < 80 &&
                 !CCed(mytar) && !mytar->HasAuraType(SPELL_AURA_MOD_TAUNT) &&
                 (!IsTank(u) || (GetHealthPCT(u) < 30 && GetHealthPCT(me) > 67)) &&
                 IsInBotParty(u) && Rand() < 20 + 30 * u->getAttackers().size())

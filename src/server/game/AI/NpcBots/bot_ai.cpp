@@ -477,9 +477,9 @@ void bot_ai::ResetBotAI(uint8 resetType)
 
     if ((resetType == BOTAI_RESET_DISMISS || resetType == BOTAI_RESET_LOGOUT) && !IsTempBot())
     {
-        if (resetType == BOTAI_RESET_DISMISS)
-            ResetAllMiscValues();
-        EnableAllSpells(resetType == BOTAI_RESET_DISMISS);
+        //if (resetType == BOTAI_RESET_DISMISS)
+            //ResetAllMiscValues();
+        //EnableAllSpells(resetType == BOTAI_RESET_DISMISS);
         InitRoles();
     }
 
@@ -15028,9 +15028,11 @@ void bot_ai::InitRoles()
     if (IsTempBot())
         _roleMask = BOT_ROLE_DPS;
     else if (me->IsSummon())
-        _roleMask = _botData->roles | (BotDataMgr::DefaultRolesForClass(_botclass, GetSpec()) & ~BOT_ROLE_DPS);
+		_roleMask = _botData->roles;
+        //_roleMask = _botData->roles | (BotDataMgr::DefaultRolesForClass(_botclass, GetSpec()) & ~BOT_ROLE_DPS);
     else if (IAmFree())
-        _roleMask = BotDataMgr::DefaultRolesForClass(_botclass, GetSpec());
+        //_roleMask = BotDataMgr::DefaultRolesForClass(_botclass, GetSpec());
+		_roleMask = _botData->roles;
     else
         _roleMask = _botData->roles;
 }
@@ -15039,7 +15041,8 @@ void bot_ai::InitSpec()
 {
     uint8 spec;
     if (IAmFree())
-        spec = BotDataMgr::SelectSpecForClass(_botclass);
+        //spec = BotDataMgr::SelectSpecForClass(_botclass);
+		spec = _botData->spec;					 
     else
         spec = _botData->spec;
 

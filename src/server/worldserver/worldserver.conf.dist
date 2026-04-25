@@ -4831,7 +4831,20 @@ NpcBot.EnrageOnDismiss = 0
 
 NpcBot.DungeonBots.Enable = 1
 
-#							  
+
+#
+#    NpcBot.DungeonBots.MaxItemLevel.Ratio
+#        Description: Maximum item ilevel to generate for dungeon bots per level bracket compared
+#                     to dungeon max item level.
+#        Note:        If item generation attempt fails becuse of item ilevel restriction
+#                     the item will be generated again with this restriction ignored
+#        Example:     0,0,0,0,0,0,0,0,90 makes dungeon bots for Halls of Reflection only generate
+#                     items of ilevel 198N/209H or less instead of default max 219/232
+#        Default:     0,0,0,0,0,0,0,0,0
+
+NpcBot.DungeonBots.MaxItemLevel.Ratio = 0,0,0,0,0,0,0,0,0
+
+
 #    NpcBot.WanderingBots.Continents.Count
 #        Description: 期望生成的自由漫游机器人的数量。漫游机器人会在地图上
 #                     四处游荡寻找麻烦。它们的名字和外观是从数据库中

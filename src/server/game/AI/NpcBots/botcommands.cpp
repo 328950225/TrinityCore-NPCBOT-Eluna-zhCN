@@ -1684,12 +1684,12 @@ public:
         }
 
         std::ostringstream ss;
+        ItemPerBotClassMap const& bot_gear = BotDataMgr::GetWanderingBotsSortedGearMap().at(BOT_GENERATED_WANDERING);
         for (uint32 c = BOT_CLASS_WARRIOR; c < BOT_CLASS_END; ++c)
         {
             if (c != *bc)
                 continue;
             auto cname = BotColors.at(c).name;
-            ItemPerBotClassMap const& bot_gear = BotDataMgr::GetWanderingBotsSortedGearMap();
             ItemPerSlot const& ips_arr = bot_gear.at(c);
             for (uint32 s = BOT_SLOT_MAINHAND; s < BOT_INVENTORY_SIZE; ++s)
             {
@@ -3893,7 +3893,7 @@ public:
             std::ostringstream bss;
             for (Creature const* bot : found_bots)
             {
-                auto const& [bot_color_str, bot_class_str] = BotColors.at(bot->GetBotClass());
+                auto const& [bot_class_str, bot_color_str] = BotColors.at(bot->GetBotClass());
 
                 AreaTableEntry const* zone = sAreaTableStore.LookupEntry(bot->GetBotAI()->GetLastZoneId() ? bot->GetBotAI()->GetLastZoneId() : bot->GetZoneId());
                 std::string zone_name = zone ? zone->AreaName[handler->GetSession() ? handler->GetSessionDbLocaleIndex() : 0] : "Unknown";

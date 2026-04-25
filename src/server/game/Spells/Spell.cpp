@@ -3412,8 +3412,8 @@ void Spell::cancel(SpellCastResult result /*= SPELL_FAILED_INTERRUPTED*/, Option
         *m_selfContainer = nullptr;
 
     //npcbot: bot original caster can be removed from world during SPELL_STATE_DELAYED (Haunt Heal 48210)
-    if (m_originalCaster && m_caster != m_originalCaster && m_originalCasterGUID.GetEntry() > BOT_ENTRY_CREATE_BEGIN)
-        m_originalCaster = ObjectAccessor::GetCreature(*m_caster, m_originalCasterGUID);
+    if (m_originalCaster && m_caster && m_caster != m_originalCaster && m_originalCasterGUID.GetEntry() > BOT_ENTRY_CREATE_BEGIN)
+        m_originalCaster = m_caster->IsInWorld() ? ObjectAccessor::GetCreature(*m_caster, m_originalCasterGUID) : nullptr;
     //end npcbot
 
     // originalcaster handles gameobjects/dynobjects for gob caster
@@ -6273,7 +6273,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
 
                     if (!target->GetCharmerGUID().IsEmpty())
                         return SPELL_FAILED_CANT_BE_CHARMED;
- 
+
                     //npcbot: do not allow to charm owned npcbots
                     if (target->GetCreator() && target->GetCreator()->IsPlayer())
                         return SPELL_FAILED_TARGET_IS_PLAYER_CONTROLLED;

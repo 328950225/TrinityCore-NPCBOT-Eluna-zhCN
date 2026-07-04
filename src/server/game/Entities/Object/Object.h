@@ -398,7 +398,7 @@ public:
     std::string const& GetName() const { return m_name; }
     void SetName(std::string newname) { m_name = std::move(newname); }
 
-   /*  virtual std::string const& GetNameForLocaleIdx(LocaleConstant /*locale*/) const { return m_name; } */
+    //virtual std::string const& GetNameForLocaleIdx(LocaleConstant /*locale*/) const { return m_name; } 
     std::string const& GetNameForLocaleIdx(LocaleConstant /*locale*/) const override { return m_name; }
 
 

@@ -360,7 +360,7 @@ ChangeWeatherInterval = 11600000
 #        Description: Time (in milliseconds) for player save interval.
 #        Default:     90000 - (90 seconds)
 
-PlayerSaveInterval = 90000
+PlayerSaveInterval = 900000
 
 #
 #    PlayerSave.Stats.MinLevel
@@ -1332,7 +1332,7 @@ BirthdayTime = 1768686173
 #
 #
 
-CacheDataQueries = 1
+CacheDataQueries = 0
 
 #
 #    AllowLoggingIPAddressesInDatabase
@@ -1380,7 +1380,7 @@ TOTPMasterSecret =
 #                     4  - (Enable world only)
 #                     0  - (All disabled)
 
-Updates.EnableDatabases = 4
+Updates.EnableDatabases = 0
 
 #
 #    Updates.AutoSetup
@@ -1388,7 +1388,7 @@ Updates.EnableDatabases = 4
 #        Default:     1 - (Enabled)
 #                     0 - (Disabled)
 
-Updates.AutoSetup   = 1
+Updates.AutoSetup   = 0
 
 #
 #    Updates.Redundancy
@@ -1533,7 +1533,7 @@ Warden.NumClientModChecks = 1
 #        Default:     600 - (10 Minutes)
 #                     0 - (Disabled, client won't be kicked)
 
-Warden.ClientResponseDelay = 0
+Warden.ClientResponseDelay = 600
 
 #
 #    Warden.ClientCheckHoldOff
@@ -3993,7 +3993,7 @@ Logger.sql.sql=5,Console DBErrors
 Logger.sql.updates=3,Console Server
 Logger.mmaps=2,Server
 Logger.npcbots=2,NpcBots Server
-Logger.eluna=5,Console Eluna
+Logger.eluna=1,Console Eluna
 
 #Logger.achievement=3,Console Server
 #Logger.addon=3,Console Server
@@ -4204,7 +4204,7 @@ AntiCheat.PendingMoveChangesTimeoutTime = 0
 
 Eluna.Enabled = true
 Eluna.TraceBack = true
-Eluna.ScriptReloader = true
+Eluna.ScriptReloader = false
 Eluna.ReloadCommand = true
 Eluna.UseUnsafeMethods = true
 Eluna.UseDeprecatedMethods = true
@@ -4341,7 +4341,7 @@ NpcBot.Botgiver.FilterRaces = 0
 #                       且在当前主人下线前不会切换。
 #                       原始所有者具有优先权，但仅在机器人当前没有主人时生效。
 
-NpcBot.SharedOwnership.Options = 8
+NpcBot.SharedOwnership.Options = 0
 
 #
 #    NpcBot.SharedOwnership.MaxOwners
@@ -4575,7 +4575,7 @@ NpcBot.Limit.Raid    = 1
 #        Default:     1 - (启用)
 #                     0 - (禁用，将所有已生成的机器人保留在世界中)
 
-NpcBot.HideSpawns = 0
+NpcBot.HideSpawns = 1
 
 #
 #    NpcBot.Cost.Hire
@@ -4666,7 +4666,7 @@ NpcBot.EquipmentDisplay.ShowHelm  = 1
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 
-NpcBot.Transmog.Enable = 1
+NpcBot.Transmog.Enable = 0
 
 #
 #    NpcBot.Transmog.MixArmorClasses
@@ -4863,7 +4863,7 @@ NpcBot.WanderingBots.Continents.Count = 0
 #        Note2:       有最低等级要求的职业可能会忽略此参数设置。
 #        Default:     25,15,15,10,5,10,20,0,0
 
-NpcBot.WanderingBots.Continents.Levels = 25,15,15,10,5,30,0,0,0
+NpcBot.WanderingBots.Continents.Levels = 25,15,15,10,5,10,20,0,0
 
 #
 #    NpcBot.WanderingBots.Continents.Maps
@@ -5035,7 +5035,7 @@ NpcBot.HK.Enable = 1
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.HK.Message.Enable = 1
+NpcBot.HK.Message.Enable = 0
 
 #
 #    NpcBot.HK.Achievements.Enable
@@ -5043,7 +5043,7 @@ NpcBot.HK.Message.Enable = 1
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.HK.Achievements.Enable = 1
+NpcBot.HK.Achievements.Enable = 0
 
 #
 #    NpcBot.HK.Rate.Honor
@@ -5061,7 +5061,7 @@ NpcBot.HK.Rate.Honor = 1.0
 #        Default:     0 - (禁用)
 #                     1 - (启用)
 
-NpcBot.Premade.Enable = 1
+NpcBot.Premade.Enable = 0
 
 #
 ###################################################################################################

@@ -1240,7 +1240,7 @@ void bot_ai::BuffAndHealGroup(uint32 diff)
         std::erase_if(targets2, [this](Unit const* unit) {
             return !unit->IsPlayer() && !(IsWanderer() && unit->IsNPCBot() && unit->ToCreature()->GetBotAI()->IsWanderer());
         });
-        if (!targets2.empty() && BuffTarget(targets2.size() == 1 ? targets2.front() : Bcore::Containers::SelectRandomContainerElement(targets2), diff))
+        if (!targets2.empty() && CanDoNonCombatActions() && BuffTarget(targets2.size() == 1 ? targets2.front() : Bcore::Containers::SelectRandomContainerElement(targets2), diff))
             return;
         for (Unit* heal_target : targets2)
             if (GetHealthPCT(heal_target) < 95 && urand(1, 100) <= (30 + 30*uint32(!!GetBG())) && HealTarget(heal_target, diff))
@@ -1461,12 +1461,16 @@ void bot_ai::BuffAndHealGroup(uint32 diff)
 // no need to check global cooldown
 void bot_ai::ResurrectGroup(uint32 spell_id)
 {
-    if (!spell_id || Rand() > 10)
+    if (!spell_id || Rand() > 10 || me->GetMap()->IsBattleground())
         return;
 
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id);
     ASSERT(spellInfo);
     spellInfo = spellInfo->TryGetSpellInfoOverride(me);
+
+    if (!spellInfo->CanBeUsedInCombat() && (me->IsInCombat() || !CanDoNonCombatActions()))
+        return;
+
     if (int32(me->GetPower(spellInfo->PowerType)) < spellInfo->CalcPowerCost(me, spellInfo->GetSchoolMask()))
         return;
 
@@ -1845,6 +1849,32 @@ bool bot_ai::CanRemoveReflectSpells(Unit const* target, uint32 spellId) const
             }
         //}
     }
+
+    return false;
+}
+
+bool bot_ai::CanTauntTarget(Unit const* target, float dist) const
+{
+    Unit const* u = target->GetVictim();
+
+    if (u && u != me && Rand() < 50 && dist < 30 &&
+        target->CanHaveThreatList() && !CCed(target) && !target->HasAuraType(SPELL_AURA_MOD_TAUNT) &&
+        (!IsTank(u) || (IsTank() && GetHealthPCT(me) > 67 &&
+        (GetHealthPCT(u) < 30 || (IsOffTank() && !IsOffTank(u) && IsPointedOffTankingTarget(target)) ||
+        (!IsOffTank() && IsOffTank(u) && IsPointedTankingTarget(target))))))
+        return true;
+
+    return false;
+}
+bool bot_ai::CanTauntDistantTarget(Unit const* target) const
+{
+    Unit const* u = target->GetVictim();
+
+    if (!IAmFree() && u == me && Rand() < 35 && IsTank() &&
+        (IsOffTank() || master->GetBotMgr()->GetNpcBotsCountByRole(BOT_ROLE_TANK_OFF) == 0) &&
+        !(me->GetLevel() >= 40 && target->IsCreature() &&
+        (target->ToCreature()->IsDungeonBoss() || target->ToCreature()->isWorldBoss())))
+        return true;
 
     return false;
 }
@@ -3171,7 +3201,7 @@ void bot_ai::SetStats(bool force)
             //from wands
             for (auto i : NPCBots::index_array<uint8, BOT_FIRST_NON_MELEE_SLOT>)
                 if (ItemTemplate const* proto = _equips[i] ? _equips[i]->GetTemplate() : nullptr)
-                    value += proto->getDPS() * 1.35f;
+                    value += proto->GetDPS() * 1.35f;
         }
         if (_botclass == BOT_CLASS_ARCHMAGE)
         {
@@ -6231,9 +6261,9 @@ bool bot_ai::IsUsableItem(Item const* item)
 {
     if (ItemTemplate const* proto = item->GetTemplate())
     {
-        for (auto const& itemSpell : proto->Spells)
+        for (auto const& itemSpell : proto->Effects)
         {
-            if (itemSpell.SpellId != 0 && itemSpell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+            if (itemSpell.SpellID != 0 && itemSpell.TriggerType == ITEM_SPELLTRIGGER_ON_USE)
                 return true;
         }
     }
@@ -6247,10 +6277,10 @@ uint32 bot_ai::GetItemSpellCooldown(uint32 spellId) const
         if (item && IsUsableItem(item))
         {
             ItemTemplate const* proto = item->GetTemplate();
-            for (auto const& itemSpell : proto->Spells)
+            for (auto const& itemSpell : proto->Effects)
             {
-                if (itemSpell.SpellId == decltype(itemSpell.SpellId)(spellId))
-                    return itemSpell.SpellCooldown;
+                if (itemSpell.SpellID == decltype(itemSpell.SpellID)(spellId))
+                    return itemSpell.CoolDownMSec;
             }
         }
     }
@@ -6272,14 +6302,14 @@ void bot_ai::CheckUsableItems(uint32 diff)
             {
                 bool is_spell_ready = false;
                 uint32 firstItemSpellId = 0;
-                for (auto const& itemSpell : item->GetTemplate()->Spells)
+                for (auto const& itemSpell : item->GetTemplate()->Effects)
                 {
-                    if (itemSpell.SpellId > 0 && itemSpell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+                    if (itemSpell.SpellID > 0 && itemSpell.TriggerType == ITEM_SPELLTRIGGER_ON_USE)
                     {
                         if (firstItemSpellId == 0)
-                            firstItemSpellId = itemSpell.SpellId;
+                            firstItemSpellId = itemSpell.SpellID;
 
-                        if (IsSpellReady(itemSpell.SpellId, diff, false))
+                        if (IsSpellReady(itemSpell.SpellID, diff, false))
                             is_spell_ready = true;
                         else
                         {
@@ -8079,46 +8109,20 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                     }
                     else if (option == 3) //refreshment table
                     {
-                        uint32 tableSpellId = GetSpell(43987); //Ritual of Refreshment
+                        uint32 tableSpellId = GetSpell(RITUAL_OF_REFRESHMENT_1); //Ritual of Refreshment
                         if (!tableSpellId)
                         {
                             BotWhisper(LocalizedNpcText(player, BOT_TEXT_DISABLED), player);
                             break;
                         }
-                        if (!IsSpellReady(43987, GetLastDiff(), false))
+                        if (!IsSpellReady(RITUAL_OF_REFRESHMENT_1, GetLastDiff(), false))
                         {
                             BotWhisper(LocalizedNpcText(player, BOT_TEXT_NOT_READY_YET), player);
                             break;
                         }
-                        uint32 tableGOForSpell = (tableSpellId == 43987 ? GO_REFRESHMENT_TABLE_1 : GO_REFRESHMENT_TABLE_2);
-                        GameObjectTemplate const* goInfo = sObjectMgr->GetGameObjectTemplate(tableGOForSpell);
-                        if (!goInfo)
-                        {
-                            BotWhisper(LocalizedNpcText(player, BOT_TEXT_INVALID_OBJECT_TYPE), player);
-                            break;
-                        }
-                        float x,y,z;
-                        me->GetClosePoint(x, y, z, me->GetCombatReach(), 0.f, 0.f);
-                        QuaternionData rot = QuaternionData::fromEulerAnglesZYX(me->GetOrientation(), 0.f, 0.f);
+                        uint32 tableGOForSpell = (tableSpellId == RITUAL_OF_REFRESHMENT_1 ? GO_REFRESHMENT_TABLE_1 : GO_REFRESHMENT_TABLE_2);
 
-                        GameObject* table = new GameObject;
-                        if (!table->Create(me->GetMap()->GenerateLowGuid<HighGuid::GameObject>(), tableGOForSpell, me->GetMap(),
-                            me->GetPhaseMask(), Position(x,y,z,me->GetOrientation()), rot, 255, GO_STATE_READY))
-                        {
-                            delete table;
-                            BotWhisper(LocalizedNpcText(player, BOT_TEXT_FAILED), player);
-                            break;
-                        }
-
-                        SetSpellCooldown(43987, 300000);
-
-                        table->SetRespawnTime(180);
-                        //table->SetOwnerGUID(master->GetGUID());
-                        master->AddGameObject(table);
-                        table->SetSpellId(tableSpellId);
-                        me->GetMap()->AddToMap(table);
-
-                        BotWhisper(LocalizedNpcText(player, BOT_TEXT_DONE), player);
+                        SummonGameobject(tableGOForSpell, RITUAL_OF_REFRESHMENT_1, 180, 300000, BOT_TEXT_DONE, master, true);
                         break;
                     }
                     else if (option == 4) // portal
@@ -8480,46 +8484,19 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                     }
                     else if (action == 3) //soulwell
                     {
-                        uint32 wellSpellId = GetSpell(29893); //Ritual of Souls
+                        uint32 wellSpellId = GetSpell(RITUAL_OF_SOULS_1); //Ritual of Souls
                         if (!wellSpellId)
                         {
                             BotWhisper(LocalizedNpcText(player, BOT_TEXT_DISABLED), player);
                             break;
                         }
-                        if (!IsSpellReady(29893, GetLastDiff(), false))
+                        if (!IsSpellReady(RITUAL_OF_SOULS_1, GetLastDiff(), false))
                         {
                             BotWhisper(LocalizedNpcText(player, BOT_TEXT_NOT_READY_YET), player);
                             break;
                         }
-                        uint32 wellGOForSpell = (wellSpellId == 29893 ? GO_SOULWELL_1 : GO_SOULWELL_2);
-                        GameObjectTemplate const* goInfo = sObjectMgr->GetGameObjectTemplate(wellGOForSpell);
-                        if (!goInfo)
-                        {
-                            BotWhisper(LocalizedNpcText(player, BOT_TEXT_INVALID_OBJECT_TYPE), player);
-                            break;
-                        }
-                        float x,y,z;
-                        me->GetClosePoint(x, y, z, me->GetCombatReach(), 0.f, 0.f);
-                        QuaternionData rot = QuaternionData::fromEulerAnglesZYX(me->GetOrientation(), 0.f, 0.f);
-
-                        GameObject* soulwell = new GameObject;
-                        if (!soulwell->Create(me->GetMap()->GenerateLowGuid<HighGuid::GameObject>(), wellGOForSpell, me->GetMap(),
-                            me->GetPhaseMask(), Position(x,y,z,me->GetOrientation()), rot, 255, GO_STATE_READY))
-                        {
-                            delete soulwell;
-                            BotWhisper(LocalizedNpcText(player, BOT_TEXT_FAILED), player);
-                            break;
-                        }
-
-                        SetSpellCooldown(29893, 300000);
-
-                        soulwell->SetRespawnTime(180);
-                        //soulwell->SetOwnerGUID(master->GetGUID());
-                        master->AddGameObject(soulwell);
-                        soulwell->SetSpellId(wellSpellId);
-                        me->GetMap()->AddToMap(soulwell);
-
-                        BotWhisper(LocalizedNpcText(player, BOT_TEXT_DONE), player);
+                        uint32 wellGOForSpell = (wellSpellId == RITUAL_OF_SOULS_1 ? GO_SOULWELL_1 : GO_SOULWELL_2);
+                        SummonGameobject(wellGOForSpell, RITUAL_OF_SOULS_1, 180, 300000, BOT_TEXT_DONE, master, true);
                         break;
                     }
                     break;
@@ -10280,7 +10257,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                 {
                     ItemTemplate const* proto = item->GetTemplate();
                     // Learning (483 / 55884)
-                    if (proto->Spells[0].SpellId == 483 || proto->Spells[0].SpellId == 55884)
+                    if (proto->Effects[0].SpellID == 483 || proto->Effects[0].SpellID == 55884)
                         break;
 
                     // cast item spell
@@ -10309,11 +10286,11 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                         proto->RequiredSkill == 0 && proto->RequiredSpell == 0 && bot->GetLevel() >= proto->RequiredLevel))
                         return false;
                     bool has_spell = false;
-                    for (auto const& ispell: proto->Spells)
+                    for (auto const& ispell: proto->Effects)
                     {
-                        if (ispell.SpellId != 0)
+                        if (ispell.SpellID != 0)
                         {
-                            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(ispell.SpellId))
+                            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(ispell.SpellID))
                             {
                                 if (spellInfo->IsPassive())
                                     continue;
@@ -13747,17 +13724,17 @@ void bot_ai::ApplyItemEquipSpells(Item* item, bool apply)
 
     for (auto i : NPCBots::index_array<uint8, MAX_ITEM_PROTO_SPELLS>)
     {
-        _Spell const& spellData = proto->Spells[i];
+        auto const& spellData = proto->Effects[i];
 
-        if (!spellData.SpellId)
+        if (!spellData.SpellID)
             continue;
 
         // wrong triggering type
-        if (apply && spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_EQUIP)
+        if (apply && spellData.TriggerType != ITEM_SPELLTRIGGER_ON_EQUIP)
             continue;
 
         // check if it is valid spell
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellID);
         if (!spellInfo)
             continue;
 
@@ -14585,11 +14562,11 @@ void bot_ai::_castBotItemUseSpell(Item const* item, SpellCastTargets const& targ
     SpellInfo const* spellInfo;
     for (auto i : NPCBots::index_array<uint8, MAX_ITEM_PROTO_SPELLS>)
     {
-        _Spell const& spellData = proto->Spells[i];
-        if (!spellData.SpellId || spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
+        auto const& spellData = proto->Effects[i];
+        if (!spellData.SpellID || spellData.TriggerType != ITEM_SPELLTRIGGER_ON_USE)
             continue;
 
-        spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellId);
+        spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellID);
         if (!spellInfo)
             continue;
 
@@ -15517,7 +15494,7 @@ void bot_ai::_AddItemLink(Player const* forPlayer, Item const* item, std::ostrin
 //Unused
 void bot_ai::_AddQuestLink(Player const* forPlayer, Quest const* quest, std::ostringstream &str) const
 {
-    std::string questTitle = quest->GetTitle();
+    std::string questTitle = quest->GetLogTitle();
     _LocalizeQuest(forPlayer, questTitle, quest->GetQuestId());
     str << "|cFFEFFD00|Hquest:" << quest->GetQuestId() << ':' << quest->GetQuestLevel() << "|h[" << questTitle << "]|h|r";
 }
@@ -15639,9 +15616,9 @@ void bot_ai::_LocalizeQuest(Player const* forPlayer, std::string &questTitle, ui
     if (!questInfo)
         return;
 
-    if (questInfo->Title.size() > loc && !questInfo->Title[loc].empty())
+    if (questInfo->LogTitle.size() > loc && !questInfo->LogTitle[loc].empty())
     {
-        const std::string title = questInfo->Title[loc];
+        const std::string title = questInfo->LogTitle[loc];
         if (Utf8FitTo(title, wnamepart))
             questTitle = title;
     }
@@ -15840,6 +15817,10 @@ void bot_ai::JustEnteredCombat(Unit* u)
         }
     }
 }
+void bot_ai::JustExitedCombat()
+{
+    _nonCombatActionsTimer = NON_COMBAT_ACTIONS_TIMER_DEFAULT;
+}
 //killer may be NULL
 void bot_ai::JustDied(Unit* u)
 {
@@ -15893,7 +15874,7 @@ void bot_ai::JustDied(Unit* u)
     }
 
     _reviveTimer = (IsWanderer() && !(u && u->IsControlledByPlayer())) ? REVIVE_TIMER_MEDIUM :
-        IAmFree() ? REVIVE_TIMER_DEFAULT : master->InBattleground() ? REVIVE_TIMER_SHORT / 2 : REVIVE_TIMER_SHORT;
+        IAmFree() ? REVIVE_TIMER_DEFAULT : master->InBattleground() ? REVIVE_TIMER_BG : REVIVE_TIMER_SHORT;
     _atHome = false;
     _evadeMode = false;
     spawned = false;
@@ -15983,6 +15964,43 @@ void bot_ai::KilledUnit(Unit* u)
         if (me->GetMap()->GetEntry()->IsContinent())
             evadeDelayTimer = 3000;
     }
+}
+
+bool bot_ai::SummonGameobject(uint32 entry, uint32 spell_id, int32 life_time, uint32 cooldown, uint32 text_id, Player* forPlayer, bool report_fail)
+{
+    GameObjectTemplate const* goInfo = sObjectMgr->GetGameObjectTemplate(entry);
+    if (!goInfo)
+    {
+        if (forPlayer && report_fail)
+            BotWhisper(LocalizedNpcText(forPlayer, BOT_TEXT_INVALID_OBJECT_TYPE), forPlayer);
+        return false;
+    }
+
+    float x,y,z;
+    me->GetClosePoint(x, y, z, me->GetCombatReach(), 0.f, 0.f);
+    QuaternionData rot = QuaternionData::fromEulerAnglesZYX(me->GetOrientation(), 0.f, 0.f);
+
+    GameObject* go = new GameObject;
+    if (!go->Create(me->GetMap()->GenerateLowGuid<HighGuid::GameObject>(), entry, me->GetMap(), me->GetPhaseMask(), Position(x,y,z,me->GetOrientation()), rot, 255, GO_STATE_READY))
+    {
+        delete go;
+        if (forPlayer && report_fail)
+            BotWhisper(LocalizedNpcText(forPlayer, BOT_TEXT_FAILED), forPlayer);
+        return false;
+    }
+
+    SetSpellCooldown(spell_id, cooldown);
+
+    go->SetRespawnTime(life_time);
+    //go->SetOwnerGUID(forPlayer->GetGUID());
+    forPlayer->AddGameObject(go);
+    go->SetSpellId(spell_id);
+    me->GetMap()->AddToMap(go);
+
+    if (forPlayer && text_id)
+        BotWhisper(LocalizedNpcText(forPlayer, text_id), forPlayer);
+
+    return true;
 }
 
 void bot_ai::UnsummonCreature(Creature* creature, bool /*save*/)
@@ -16152,8 +16170,8 @@ void bot_ai::OnBotOwnerSpellGo(Spell const* spell, bool ok)
             }
             if (spell->m_targets.GetSpeed() != 0)
                 targets.SetSpeed(spell->m_targets.GetSpeed());
-            if (spell->m_targets.GetElevation() != 0)
-                targets.SetElevation(spell->m_targets.GetElevation());
+            if (spell->m_targets.GetPitch() != 0)
+                targets.SetPitch(spell->m_targets.GetPitch());
             if (!spell->m_targets.GetUnitTargetGUID().IsEmpty())
             {
                 if (Unit* target = ObjectAccessor::GetUnit(*veh->GetBase(), spell->m_targets.GetUnitTargetGUID()))
@@ -16258,17 +16276,17 @@ void bot_ai::CastBotItemCombatSpell(DamageInfo const& damageInfo, Item* item, It
     {
         for (auto i : NPCBots::index_array<uint8, MAX_ITEM_PROTO_SPELLS>)
         {
-            _Spell const& spellData = proto->Spells[i];
+            auto const& spellData = proto->Effects[i];
 
             // no spell
-            if (!spellData.SpellId)
+            if (!spellData.SpellID)
                 continue;
 
             // wrong triggering type
-            if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_CHANCE_ON_HIT)
+            if (spellData.TriggerType != ITEM_SPELLTRIGGER_CHANCE_ON_HIT)
                 continue;
 
-            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellId);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellID);
             if (!spellInfo)
             {
                 //BOT_LOG_ERROR("entities.player.items", "WORLD: unknown Item spellid {}", spellData.SpellId);
@@ -16512,7 +16530,7 @@ void bot_ai::_processQueuedActions()
 
     BotAction const& action = GetFirstActionInQueue();
 
-    if (action._exec_point <= now)
+    if (action._exec_point > now)
         return;
 
     Unit* target = nullptr;
@@ -16553,7 +16571,7 @@ void bot_ai::_processQueuedActions()
                 return;
             }
 
-            const bool is_casting = IsCasting(target);
+            const bool is_casting = IsCasting();
             const bool is_target_casting = IsCasting(target);
             const uint32 spell_id = _spells.at(action.params.spell_cast_params.base_spell).spellId;
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id);
@@ -16634,7 +16652,12 @@ void bot_ai::_processQueuedActions()
                 me->InterruptNonMeleeSpells(false);
 
             if (doCast(target, spell_id))
+            {
+                // bot could die via spell cast: action is garbage then!
+                if (!HasQueuedActions())
+                    break;
                 CompleteAction(action);
+            }
             else
             {
                 const bool cancel_now = action.GetTimeout() > now + 1s;
@@ -17759,12 +17782,18 @@ bool bot_ai::GlobalUpdate(uint32 diff)
         _OnManaUpdate();
     }
 
+    if (actionsTimer <= diff)
+    {
+        _processQueuedActions();
+
+        //performing queued action could kill the bot
+        if (!me->IsAlive())
+            return false;
+    }
+
     // group update
     if (_groupUpdateTimer <= diff)
         SendUpdateToOutOfRangeBotGroupMembers();
-
-    if (actionsTimer <= diff)
-        _processQueuedActions();
 
     //if (me->HasInvisibilityAura() || me->HasStealthAura())
     //    return false;
@@ -18022,6 +18051,56 @@ bool bot_ai::GlobalUpdate(uint32 diff)
 
             if (_wmoAreaUpdateTimer <= diff)
                 _UpdateWMOArea();
+        }
+
+        //Battleground start summons
+        if (me->IsInWorld() && IsWanderer() && (GetBotClassMask1() & BOT_CLASS_MASK_MAGE_OR_WARLOCK) && GetGroup() && GetBG() && GetBG()->GetStartDelayTime() && IAmFree())
+        {
+            Player* player = nullptr;
+            for (GroupReference* itr = GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                if (Player* psrc = itr->GetSource())
+                {
+                    player = psrc;
+                    break;
+                }
+            }
+
+            if (player)
+            {
+                uint32 base_spell_id = 0;
+                uint32 gameobject_id = 0;
+
+                if (GetBotClass() == BOT_CLASS_MAGE)
+                {
+                    base_spell_id = RITUAL_OF_REFRESHMENT_1;
+                    gameobject_id = (GetSpell(base_spell_id) == RITUAL_OF_REFRESHMENT_1) ? GO_REFRESHMENT_TABLE_1 : GO_REFRESHMENT_TABLE_2;
+                }
+                else // if (GetBotClass() == BOT_CLASS_WARLOCK)
+                {
+                    base_spell_id = RITUAL_OF_SOULS_1;
+                    gameobject_id = (GetSpell(base_spell_id) == RITUAL_OF_SOULS_1 ? GO_SOULWELL_1 : GO_SOULWELL_2);
+                }
+
+                if (base_spell_id && gameobject_id && IsSpellReady(base_spell_id, diff))
+                {
+                    GameObject* go = nullptr;
+                    Bcore::GameObjectInRangeCheck gcheck(me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), 50.f, gameobject_id);
+                    Bcore::GameObjectSearcher gsearcher(me, go, gcheck);
+                    Cell::VisitGridObjects(me, gsearcher, 50.f);
+
+                    if (!go)
+                    {
+                        Unit* caster = nullptr;
+                        CastingUnitCheck check(me, 0.f, 50.f); // do not check spell id
+                        Bcore::UnitSearcher searcher(me, caster, check);
+                        Cell::VisitAllObjects(me, searcher, 50.f);
+
+                        if (!caster)
+                            SummonGameobject(gameobject_id, base_spell_id, 180, 300000, BOT_TEXT_HERE_YOU_GO, player);
+                    }
+                }
+            }
         }
 
         //Meeting Stone
@@ -18446,6 +18525,7 @@ void bot_ai::CommonTimers(uint32 diff)
         }
     }
 
+    if (_nonCombatActionsTimer > diff)_nonCombatActionsTimer -= diff;
     if (_contestedPvPTimer > diff)  _contestedPvPTimer -= diff;
 
     if (_groupUpdateTimer > diff)   _groupUpdateTimer -= diff;
@@ -19587,7 +19667,7 @@ WanderNode const* bot_ai::GetNextBGTravelNode() const
                     }
                 });
 
-                uint8 max_attackers = std::max<uint8>(my_team_size * 7 / 10, my_team_size / 2 + 2);
+                uint8 max_attackers = std::max<uint8>(my_team_size * 8 / 10, my_team_size / 2 + 2);
                 uint8 max_defenders = my_team_size - max_attackers;
 
                 //attack?
@@ -20093,12 +20173,6 @@ WanderNode const* bot_ai::GetNextBGTravelNode() const
         default:
             break;
     }
-
-    //if (links.size() > 1)
-    //{
-    //    BOT_LOG_DEBUG("npcbots", "Bot {} {} team {} has no target point in BG_AB! Falling back to random ({} links)!. Cur node: {} {}",
-    //        me->GetName(), me->GetEntry(), uint32(myTeamId), uint32(curNode->GetLinks().size()), curNode->GetWPId(), curNode->GetName());
-    //}
 
     return nullptr;
 }

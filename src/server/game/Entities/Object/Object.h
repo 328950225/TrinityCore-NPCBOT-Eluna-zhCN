@@ -161,11 +161,12 @@ public:
 
     uint16 GetValuesCount() const { return m_valuesCount; }
 
+    virtual std::string const& GetNameForLocaleIdx(LocaleConstant /*locale*/) const = 0;
     virtual bool hasQuest(uint32 /* quest_id */) const { return false; }
     virtual bool hasInvolvedQuest(uint32 /* quest_id */) const { return false; }
     void SetIsNewObject(bool enable) { m_isNewObject = enable; }
-    virtual void BuildUpdate(UpdateDataMapType&) {}
-    void BuildFieldsUpdate(Player*, UpdateDataMapType&) const;
+    virtual void BuildUpdate(UpdateDataMapType&) { }
+    void BuildFieldsUpdate(Player*, UpdateDataMapType &) const;
 
     void SetFieldNotifyFlag(uint16 flag) { _fieldNotifyFlags |= flag; }
     void RemoveFieldNotifyFlag(uint16 flag) { _fieldNotifyFlags &= uint16(~flag); }
@@ -397,7 +398,9 @@ public:
     std::string const& GetName() const { return m_name; }
     void SetName(std::string newname) { m_name = std::move(newname); }
 
-    virtual std::string const& GetNameForLocaleIdx(LocaleConstant /*locale*/) const { return m_name; }
+   /*  virtual std::string const& GetNameForLocaleIdx(LocaleConstant /*locale*/) const { return m_name; } */
+    std::string const& GetNameForLocaleIdx(LocaleConstant /*locale*/) const override { return m_name; }
+
 
     float GetDistance(WorldObject const* obj) const;
     float GetDistance(Position const& pos) const;

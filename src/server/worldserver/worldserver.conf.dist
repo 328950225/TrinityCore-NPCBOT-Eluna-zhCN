@@ -4903,6 +4903,14 @@ NpcBot.WanderingBots.KillReward.ItemCount   = 0
 NpcBot.WanderingBots.KillReward.ItemQuality = 0
 
 #
+#    NpcBot.WanderingBots.FreeLoot.Skinning
+#        Description: Let wandering bot kills benefit surrounding players.
+#                     Skinning - preserve skinnable flag
+#        Default:     0 - (NpcBot.WanderingBots.FreeLoot.Skinning)
+
+NpcBot.WanderingBots.FreeLoot.Skinning = 0
+
+#
 #    NpcBot.WanderingBots.MaxItemLevel.Levels
 #        Description: 为不同等级段的漫游机器人生成装备时的最高物品等级（iLevel）：
 #                     0-9级, 10-19级, 20-29级, ... , 70-79级, 80级及以上。

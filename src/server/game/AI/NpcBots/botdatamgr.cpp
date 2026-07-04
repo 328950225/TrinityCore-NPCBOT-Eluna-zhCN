@@ -93,7 +93,7 @@ bool BotBankItemCompare::operator()(Item const* item1, Item const* item2) const
                 if (proto1->Quality == proto2->Quality)
                 {
                     float gs1 = CalculateItemGearScoreRaw(proto1);
-                    float gs2 = CalculateItemGearScoreRaw(proto1);
+                    float gs2 = CalculateItemGearScoreRaw(proto2);
                     if (gs1 == gs2)
                     {
                         if (proto1->Name1 == proto2->Name1)
@@ -2186,7 +2186,7 @@ void BotDataMgr::CreateGeneratedBotsSortedGear()
         switch (proto.Quality)
         {
             case ITEM_QUALITY_NORMAL:
-                if (std::ranges::any_of(proto.Spells, [](_Spell const& spell) { return !!spell.SpellId; }))
+                if (std::ranges::any_of(proto.Effects, [](ItemEffect const& spell) { return !!spell.SpellID; }))
                     skip = true;
                 if (proto.RequiredLevel > 14)
                     skip = true;
@@ -2224,7 +2224,7 @@ void BotDataMgr::CreateGeneratedBotsSortedGear()
         if (proto.StatsCount > 0 && std::ranges::any_of(proto.ItemStat, [](_ItemStat const& stat) {
             return (stat.ItemStatType == ITEM_MOD_DEFENSE_SKILL_RATING || stat.ItemStatType == ITEM_MOD_DODGE_RATING ||
                 stat.ItemStatType == ITEM_MOD_PARRY_RATING || stat.ItemStatType == ITEM_MOD_BLOCK_VALUE) &&
-                stat.ItemStatValue > 0; 
+                stat.ItemStatValue > 0;
         }))
         {
             gencat_mask = 1u << NpcBotGeneratedCategory::BOT_GENERATED_DUNGEON;

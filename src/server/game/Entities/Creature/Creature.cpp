@@ -18,6 +18,7 @@
 #include "Creature.h"
 #include "BattlegroundMgr.h"
 #include "CellImpl.h"
+#include "CombatPackets.h"
 #include "Common.h"
 #include "Containers.h"
 #include "CreatureAI.h"
@@ -2463,12 +2464,12 @@ Unit* Creature::SelectNearestTargetInAttackDistance(float dist) const
 
 void Creature::SendAIReaction(AiReaction reactionType)
 {
-    WorldPacket data(SMSG_AI_REACTION, 12);
+    WorldPackets::Combat::AIReaction packet;
 
-    data << GetGUID();
-    data << uint32(reactionType);
+    packet.UnitGUID = GetGUID();
+    packet.Reaction = reactionType;
 
-    ((WorldObject*)this)->SendMessageToSet(&data, true);
+    SendMessageToSet(packet.Write(), true);
 
     TC_LOG_DEBUG("network", "WORLD: Sent SMSG_AI_REACTION, type {}.", reactionType);
 }
@@ -3039,13 +3040,13 @@ uint32 Creature::GetVendorItemCurrentCount(VendorItem const* vItem)
         if (ItemTemplate const* pProto = sObjectMgr->GetItemTemplate(vItem->item))
         {
             uint32 diff = uint32((ptime - vCount->lastIncrementTime)/vItem->incrtime);
-            if ((vCount->count + diff * pProto->BuyCount) >= vItem->maxcount)
+            if ((vCount->count + diff * pProto->GetBuyCount()) >= vItem->maxcount)
             {
                 m_vendorItemCounts.erase(itr);
                 return vItem->maxcount;
             }
 
-            vCount->count += diff * pProto->BuyCount;
+            vCount->count += diff * pProto->GetBuyCount();
             vCount->lastIncrementTime = ptime;
         }
 
@@ -3077,8 +3078,8 @@ uint32 Creature::UpdateVendorItemCurrentCount(VendorItem const* vItem, uint32 us
         if (ItemTemplate const* pProto = sObjectMgr->GetItemTemplate(vItem->item))
         {
             uint32 diff = uint32((ptime - vCount->lastIncrementTime)/vItem->incrtime);
-            if ((vCount->count + diff * pProto->BuyCount) < vItem->maxcount)
-                vCount->count += diff * pProto->BuyCount;
+            if ((vCount->count + diff * pProto->GetBuyCount()) < vItem->maxcount)
+                vCount->count += diff * pProto->GetBuyCount();
             else
                 vCount->count = vItem->maxcount;
         }
@@ -3244,7 +3245,7 @@ void Creature::SetDisplayId(uint32 modelId)
     //end npcbot
 }
 
-void Creature::SetTarget(ObjectGuid guid)
+void Creature::SetTarget(ObjectGuid const& guid)
 {
     if (HasSpellFocus())
         _spellFocusInfo.Target = guid;

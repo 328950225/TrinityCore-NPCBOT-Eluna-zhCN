@@ -2,11 +2,20 @@ name: macOS arm64
 
 on:
   push:
+    branches:
+      - 'npcbots_3.3.5'
+      - 'CI'
   pull_request:
+
+concurrency:
+  group: ${{ github.head_ref }} || concat(${{ github.ref }}, ${{ github.workflow }})
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: macos-14
+    strategy:
+      fail-fast: false
 
     steps:
     - uses: actions/checkout@v5

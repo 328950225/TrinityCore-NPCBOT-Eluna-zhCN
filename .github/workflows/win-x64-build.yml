@@ -2,11 +2,20 @@ name: Windows x64
 
 on:
   push:
+    branches:
+      - 'npcbots_3.3.5'
+      - 'CI'
   pull_request:
+
+concurrency:
+  group: ${{ github.head_ref }} || concat(${{ github.ref }}, ${{ github.workflow }})
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
     env:
       CMAKE_BUILD_TYPE: RelWithDebInfo
       MYSQL_ROOT_DIR: C:/Program Files/MySQL/MySQL Server 8.0
@@ -93,11 +102,3 @@ jobs:
         cd ${{ steps.strings.outputs.build-output-dir }}/bin/${{ env.CMAKE_BUILD_TYPE }}
         ./authserver --version
         ./worldserver --version
-
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        path: ${{ steps.strings.outputs.build-output-dir }}/bin/${{ env.CMAKE_BUILD_TYPE }}
-        name: TrinityCore335Win64VS2022
-        # Set a custom retention for artifacts
-        #retention-days: 7

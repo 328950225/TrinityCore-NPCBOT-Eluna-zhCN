@@ -247,6 +247,29 @@ namespace WorldPackets
             std::string_view CompletionText;
         };
 
+        class QuestGiverRequestReward final : public ClientPacket
+        {
+        public:
+            explicit QuestGiverRequestReward(WorldPacket&& packet) : ClientPacket(CMSG_QUESTGIVER_REQUEST_REWARD, std::move(packet)) { }
+
+            void Read() override;
+
+            ObjectGuid QuestGiverGUID;
+            int32 QuestID = 0;
+        };
+
+        class QuestGiverQueryQuest final : public ClientPacket
+        {
+        public:
+            explicit QuestGiverQueryQuest(WorldPacket&& packet) : ClientPacket(CMSG_QUESTGIVER_QUERY_QUEST, std::move(packet)) { }
+
+            void Read() override;
+
+            ObjectGuid QuestGiverGUID;
+            int32 QuestID = 0;
+            bool RespondToGiver = false;
+        };
+
         class QuestGiverOfferRewardMessage final : public ServerPacket
         {
         public:
@@ -263,6 +286,24 @@ namespace WorldPackets
             uint32 SuggestedGroupNum = 0;
             std::vector<QuestDescEmote> Emotes;
             QuestRewards Rewards;
+        };
+
+        class QueryQuestsCompleted final : public ClientPacket
+        {
+        public:
+            explicit QueryQuestsCompleted(WorldPacket&& packet) : ClientPacket(CMSG_QUERY_QUESTS_COMPLETED, std::move(packet)) { }
+
+            void Read() override { }
+        };
+
+        class QueryQuestsCompletedResponse final : public ServerPacket
+        {
+        public:
+            explicit QueryQuestsCompletedResponse() : ServerPacket(SMSG_QUERY_QUESTS_COMPLETED_RESPONSE) { }
+
+            WorldPacket const* Write() override;
+
+            std::set<uint32> const* QuestsCompleted = nullptr;
         };
     }
 }

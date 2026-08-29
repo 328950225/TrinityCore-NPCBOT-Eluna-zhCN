@@ -19,6 +19,8 @@
 #define TRINITYCORE_ALL_PACKETS_H
 
 #include "AchievementPackets.h"
+#include "AreaTriggerPackets.h"
+#include "AuctionHousePackets.h"
 #include "AuthenticationPackets.h"
 #include "BankPackets.h"
 #include "BattlegroundPackets.h"
@@ -29,6 +31,7 @@
 #include "ClientConfigPackets.h"
 #include "CombatLogPackets.h"
 #include "CombatPackets.h"
+#include "DuelPackets.h"
 #include "EquipmentSetPackets.h"
 #include "GameObjectPackets.h"
 #include "GuildPackets.h"

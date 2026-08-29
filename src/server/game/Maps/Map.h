@@ -64,7 +64,7 @@ class Weather;
 class WorldObject;
 class WorldPacket;
 class WorldSession;
-struct MapDifficulty;
+struct MapDifficultyEntry;
 struct MapEntry;
 struct Position;
 struct ScriptAction;
@@ -437,9 +437,8 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         char const* GetMapName() const;
 
         // have meaning only for instanced map (that have set real difficulty)
-        Difficulty GetDifficulty() const { return Difficulty(GetSpawnMode()); }
-        bool IsRegularDifficulty() const;
-        MapDifficulty const* GetMapDifficulty() const;
+        Difficulty GetDifficultyID() const { return Difficulty(GetSpawnMode()); }
+        MapDifficultyEntry const* GetMapDifficulty() const;
 
         bool Instanceable() const;
         bool IsWorldMap() const;

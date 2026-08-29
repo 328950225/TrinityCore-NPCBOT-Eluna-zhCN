@@ -226,6 +226,19 @@ WorldPacket const* WorldPackets::Quest::QuestGiverRequestItems::Write()
     return &_worldPacket;
 }
 
+void WorldPackets::Quest::QuestGiverRequestReward::Read()
+{
+    _worldPacket >> QuestGiverGUID;
+    _worldPacket >> QuestID;
+}
+
+void WorldPackets::Quest::QuestGiverQueryQuest::Read()
+{
+    _worldPacket >> QuestGiverGUID;
+    _worldPacket >> QuestID;
+    _worldPacket >> RespondToGiver;
+}
+
 WorldPacket const* WorldPackets::Quest::QuestGiverOfferRewardMessage::Write()
 {
     _worldPacket << QuestGiverGUID;
@@ -282,6 +295,17 @@ WorldPacket const* WorldPackets::Quest::QuestGiverOfferRewardMessage::Write()
 
     for (uint32 valueOverride : Rewards.RewardFactionOverride)
         _worldPacket << int32(valueOverride);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Quest::QueryQuestsCompletedResponse::Write()
+{
+    _worldPacket.reserve(sizeof(uint32) + QuestsCompleted->size() * sizeof(uint32));
+
+    _worldPacket << uint32(QuestsCompleted->size());
+    for (uint32 questId : *QuestsCompleted)
+        _worldPacket << uint32(questId);
 
     return &_worldPacket;
 }

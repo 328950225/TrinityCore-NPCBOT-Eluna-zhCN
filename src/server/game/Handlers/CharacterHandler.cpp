@@ -736,7 +736,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder const& holder)
     }
 
     pCurrChar->GetMotionMaster()->Initialize();
-    pCurrChar->SendDungeonDifficulty(false);
+    pCurrChar->SendDungeonDifficulty(true, false);
+    pCurrChar->SendRaidDifficulty(true, false);
 
     WorldPackets::Character::LoginVerifyWorld loginVerifyWorld;
     loginVerifyWorld.MapID = pCurrChar->GetMapId();
@@ -1008,7 +1009,7 @@ void WorldSession::SendFeatureSystemStatus()
 
 void WorldSession::HandleSetFactionAtWar(WorldPacket& recvData)
 {
-    TC_LOG_DEBUG("network", "WORLD: Received CMSG_SET_FACTION_ATWAR");
+    TC_LOG_DEBUG("network", "WORLD: Received CMSG_SET_FACTION_AT_WAR");
 
     uint32 repListID;
     uint8  flag;

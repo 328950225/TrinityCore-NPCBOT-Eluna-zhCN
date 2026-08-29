@@ -5353,10 +5353,10 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
 
         if (m_caster->ToUnit() && !m_caster->ToUnit()->GetSpellHistory()->IsReady(m_spellInfo, m_castItemEntry, IsIgnoringCooldowns()))
         {
-            if (m_triggeredByAuraSpell || m_spellInfo->IsCooldownStartedOnEvent())
+            if (m_triggeredByAuraSpell || (m_spellInfo->IsCooldownStartedOnEvent() && !m_caster->ToUnit()->GetSpellHistory()->HasCooldownOnHold(m_spellInfo->Id)))
                 return SPELL_FAILED_DONT_REPORT;
-            else
-                return SPELL_FAILED_NOT_READY;
+
+            return SPELL_FAILED_NOT_READY;
         }
 
         //npcbot
@@ -6082,7 +6082,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
                 if (map->IsDungeon())
                 {
                     uint32 mapId = m_caster->GetMap()->GetId();
-                    Difficulty difficulty = m_caster->GetMap()->GetDifficulty();
+                    Difficulty difficulty = m_caster->GetMap()->GetDifficultyID();
                     if (map->IsRaid())
                         if (InstancePlayerBind* targetBind = target->GetBoundInstance(mapId, difficulty))
                             if (InstancePlayerBind* casterBind = m_caster->ToPlayer()->GetBoundInstance(mapId, difficulty))
@@ -6632,7 +6632,7 @@ SpellCastResult Spell::CheckArenaCastRules() const
         return SPELL_CAST_OK;
 
     // check NOT_USABLE attributes
-    if (m_spellInfo->AttributesEx4 & SPELL_ATTR4_NOT_USABLE_IN_ARENA)
+    if (m_spellInfo->HasAttribute(SPELL_ATTR4_NOT_USABLE_IN_ARENA))
         return SPELL_FAILED_NOT_IN_ARENA;
 
     // check cooldowns

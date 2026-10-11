@@ -21714,7 +21714,7 @@ bool Player::BuyItemFromVendorSlot(ObjectGuid vendorguid, uint32 vendorslot, uin
         if (!(pProto->AllowableClass & (GetClassMask() | GetBotMgr()->GetAllNpcBotsClassMask())) &&
             pProto->GetBonding() == BIND_WHEN_PICKED_UP && !IsGameMaster())
         {
-            SendBuyError(BUY_ERR_CANT_FIND_ITEM, nullptr, item, 0);
+            SendBuyError(BUY_ERR_CANT_FIND_ITEM, nullptr, vendorslot);
             return false;
         }
     }

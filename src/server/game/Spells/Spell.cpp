@@ -3428,11 +3428,6 @@ void Spell::cancel(SpellCastResult result /*= SPELL_FAILED_INTERRUPTED*/, Option
         *m_selfContainer = nullptr;
 
 
-    //npcbot: bot original caster can be removed from world during SPELL_STATE_DELAYED (Haunt Heal 48210)
-    if (m_originalCaster && m_caster && m_caster != m_originalCaster && m_originalCasterGUID.GetEntry() > BOT_ENTRY_CREATE_BEGIN)
-        m_originalCaster = m_caster->IsInWorld() ? ObjectAccessor::GetCreature(*m_caster, m_originalCasterGUID) : nullptr;
-    //end npcbot
-
     // update original caster pointer to prevent access to non-existed already object (grid unload)
     UpdateOriginalCasterPointer();
 

@@ -105,6 +105,7 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
 
     Creature* unit = nullptr;
     GameObject* go = nullptr;
+	Item* item = nullptr;//eluna
     if (packet.GossipUnit.IsCreatureOrVehicle())
     {
         unit = GetPlayer()->GetNPCIfCanInteractWith(packet.GossipUnit, UNIT_NPC_FLAG_GOSSIP);
@@ -123,6 +124,16 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
             return;
         }
     }
+    //eluna
+	else if (packet.GossipUnit.IsItem())
+    {
+        item = _player->GetItemByGuid(packet.GossipUnit);
+        if (!item)
+        {
+            TC_LOG_DEBUG("network", "WORLD: HandleGossipSelectOptionOpcode - item {} not found.", packet.GossipUnit.ToString());
+            return;
+        }
+    }//eluna
     else
     {
         TC_LOG_DEBUG("network", "WORLD: HandleGossipSelectOptionOpcode - unsupported {}.", packet.GossipUnit.ToString());
@@ -133,12 +144,14 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
     if (GetPlayer()->HasUnitState(UNIT_STATE_DIED))
         GetPlayer()->RemoveAurasByType(SPELL_AURA_FEIGN_DEATH);
 
+    uint32 sender = _player->PlayerTalkClass->GetGossipOptionSender(packet.GossipIndex);
+    uint32 action = _player->PlayerTalkClass->GetGossipOptionAction(packet.GossipIndex);
+
     if ((unit && unit->GetScriptId() != unit->LastUsedScriptID) || (go && go->GetScriptId() != go->LastUsedScriptID))
     {
         TC_LOG_DEBUG("network", "WORLD: HandleGossipSelectOptionOpcode - Script reloaded while in use, ignoring and set new scipt id");
         if (unit)
             unit->LastUsedScriptID = unit->GetScriptId();
-
         if (go)
             go->LastUsedScriptID = go->GetScriptId();
         _player->PlayerTalkClass->SendCloseGossip();
@@ -154,7 +167,7 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
             /* ELUNA 适配：旧版局部变量 gossipListId/code 已不存在，改用 packet 字段传参 */
 #ifdef ELUNA
             if (Eluna* e = GetPlayer()->GetEluna())
-                if (e->OnGossipSelectCode(_player, unit, packet.GossipID, packet.GossipIndex, packet.PromotionCode.c_str()))
+                if (e->OnGossipSelectCode(_player, unit, sender, action, packet.PromotionCode.c_str()))
                     return;
 #endif
 
@@ -162,13 +175,20 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
                 _player->OnGossipSelect(unit, packet.GossipIndex, packet.GossipID);
 
         }
+		else if (item)
+        {
+#ifdef ELUNA
+            if (Eluna* e = GetPlayer()->GetEluna())
+                e->HandleGossipSelectOption(_player, item, sender, action, packet.PromotionCode);
+#endif
+        }
         else
         {
 
             /* ELUNA 适配：旧版局部变量 gossipListId/code 已不存在，改用 packet 字段传参 */
 #ifdef ELUNA
             if (Eluna* e = GetPlayer()->GetEluna())
-                if (e->OnGossipSelectCode(_player, go, packet.GossipID, packet.GossipIndex, packet.PromotionCode.c_str()))
+                if (e->OnGossipSelectCode(_player, go, sender, action, packet.PromotionCode.c_str()))
                     return;
 #endif
 
@@ -185,7 +205,7 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
             /* ELUNA 适配：旧版局部变量 gossipListId 已不存在，改用 packet 字段传参 */
 #ifdef ELUNA
             if (Eluna* e = GetPlayer()->GetEluna())
-                if (e->OnGossipSelect(_player, unit, packet.GossipID, packet.GossipIndex))
+                if (e->OnGossipSelect(_player, unit, sender, action))
                     return;
 #endif
 
@@ -193,13 +213,20 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
                 _player->OnGossipSelect(unit, packet.GossipIndex, packet.GossipID);
 
         }
+		else if (item)
+        {
+#ifdef ELUNA
+            if (Eluna* e = GetPlayer()->GetEluna())
+                e->HandleGossipSelectOption(_player, item, sender, action, std::string());
+#endif
+        }
         else
         {
 
             /* ELUNA 适配：旧版局部变量 gossipListId 已不存在，改用 packet 字段传参 */
 #ifdef ELUNA
             if (Eluna* e = GetPlayer()->GetEluna())
-                if (e->OnGossipSelect(_player, go, packet.GossipID, packet.GossipIndex))
+                if (e->OnGossipSelect(_player, go, sender, action))
                     return;
 #endif
 
